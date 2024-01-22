@@ -1,0 +1,54 @@
+{
+  "name": "team",
+  "description": "Manage your team",
+  "options": [
+    {
+      "type": 1,
+      "name": "add",
+      "description": "Adds a new team",
+      "options": [
+        {
+          "type": 3,
+          "name": "name",
+          "description": "Team name",
+          "required": true,
+          "max_length": 100,
+          "min_length": 1
+        }
+      ]
+    },
+    {
+      "type": 1,
+      "name": "remove",
+      "description": "Removes a team",
+      "options": [
+        {
+          "type": 3,
+          "name": "team",
+          "description": "The team to remove",
+          "required": true,
+          "autocomplete": true
+        }
+      ]
+    },
+    {
+      "type": 1,
+      "name": "list",
+      "description": "Lists all teams"
+    },
+    {
+      "type": 1,
+      "name": "stats",
+      "description": "Get team stats",
+      "options": [
+        {
+          "type": 3,
+          "name": "team",
+          "description": "Team to get stats for",
+          "required": true,
+          "autocomplete": true
+        }
+      ]
+    }
+  ]
+}
