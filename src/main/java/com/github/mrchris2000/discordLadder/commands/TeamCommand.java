@@ -4,14 +4,24 @@ import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import reactor.core.publisher.Mono;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.Collection;
 import java.util.List;
 
 public class TeamCommand implements SlashCommand {
+    public TeamCommand(Connection connection) {
+        this.connection = connection;
+    }
+
     @Override
     public String getName() {
         return "team";
     }
+
+    private Connection connection;
 
     @Override
     public Mono<Void> handle(ChatInputInteractionEvent event) {
@@ -23,8 +33,10 @@ public class TeamCommand implements SlashCommand {
          */
         //System.out.println(event.toString());
         //ApplicationCommandInteractionOption root = event.getOption("team").get();
-
+        Statement st = null;
+        ResultSet rs = null;
         try {
+            st = connection.createStatement();
             if (event.getOption("add").isPresent()) {
                 ApplicationCommandInteractionOption type = event.getOption("add").get();
 
@@ -32,16 +44,35 @@ public class TeamCommand implements SlashCommand {
                         .map(ApplicationCommandInteractionOptionValue::asString)
                         .get();
 
+                st = connection.prepareStatement("INSERT INTO teams (team_name) VALUES (?)");
+                ((PreparedStatement) st).setString(1, name);
+                int row = ((PreparedStatement) st).executeUpdate();
                 return event.reply()
-                        .withEphemeral(false).withContent("Adding team: " + name);
+                        .withEphemeral(false).withContent("Adding team: " + name + " : Row : "+row);
             } else if (event.getOption("list").isPresent()) {
 
-                return event.reply()
-                        .withEphemeral(false).withContent("Current teams: ---");
-            } else if (event.getOption("remove").isPresent()) {
+                st.executeQuery("select team_name from teams");
+                rs = st.getResultSet();
+                String output = "Current teams:\n";
+                while(rs.next()){
+                    output = output.concat( rs.getString("team_name")+ "\n");
+                }
+
 
                 return event.reply()
-                        .withEphemeral(false).withContent("Removing xxx from Team yyy");
+                        .withEphemeral(false).withContent(output);
+            } else if (event.getOption("remove").isPresent()) {
+                ApplicationCommandInteractionOption type = event.getOption("remove").get();
+                String name = type.getOption("name").flatMap(ApplicationCommandInteractionOption::getValue)
+                        .map(ApplicationCommandInteractionOptionValue::asString)
+                        .get();
+
+                st = connection.prepareStatement("DELETE FROM teams WHERE team_name=?");
+                ((PreparedStatement) st).setString(1, name);
+                int row = ((PreparedStatement) st).executeUpdate();
+
+                return event.reply()
+                        .withEphemeral(false).withContent("Removing team: " + name);
             } else if (event.getOption("stats").isPresent()) {
                 ApplicationCommandInteractionOption type = event.getOption("stats").get();
 
@@ -54,6 +85,16 @@ public class TeamCommand implements SlashCommand {
             }
         }catch(Exception e){
             e.printStackTrace();
+        } finally {
+            try{
+                if(rs != null)
+                    rs.close();
+                if(st != null)
+                    st.close();
+            }catch (Exception e){
+                //Well this is fucked then...
+                e.printStackTrace();
+            }
         }
         return  event.reply()
                 .withEphemeral(true).withContent("Team command failed, no valid option found");

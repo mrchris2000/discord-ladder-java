@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -22,11 +23,14 @@ public class GlobalCommandRegistrar {
 
     private final RestClient restClient;
 
+    private final Connection dbConnection;
+
     // The name of the folder the commands json is in, inside our resources folder
     private static final String commandsFolderName = "commands/";
 
-    public GlobalCommandRegistrar(RestClient restClient) {
+    public GlobalCommandRegistrar(RestClient restClient, Connection connection) {
         this.restClient = restClient;
+        this.dbConnection = connection;
     }
 
     //Since this will only run once on startup, blocking is okay.
