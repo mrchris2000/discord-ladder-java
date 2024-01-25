@@ -1,16 +1,27 @@
 package com.github.mrchris2000.discordLadder;
 
+import com.github.mrchris2000.discordLadder.infra.AutoCompletes;
 import com.github.mrchris2000.discordLadder.listeners.SlashCommandListener;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
+import discord4j.core.object.command.*;
+import discord4j.core.object.entity.Guild;
+import discord4j.core.object.entity.Member;
+import discord4j.core.object.entity.Role;
+import discord4j.core.object.entity.User;
+import discord4j.discordjson.json.*;
+import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
+import discord4j.gateway.intent.Intent;
+import discord4j.gateway.intent.IntentSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 
@@ -27,8 +38,14 @@ public class LadderBot {
 
         //Creates the gateway client and connects to the gateway
         final GatewayDiscordClient client = DiscordClientBuilder.create("MTE5ODcwMzY3Njk4NzAyMzQ1MA.G4Qh7M.sLXpAdfAMHmLggihWwXcsPplOfvn5W35F-aTkE").build()
+                .gateway()
+                .setEnabledIntents(IntentSet.of(Intent.GUILD_MEMBERS))
                 .login()
                 .block();
+
+        //Set up user completes..?
+        AutoCompletes completions = new AutoCompletes(client, connection);
+        completions.addPlayers();
 
         /* Call our code to handle creating/deleting/editing our global slash commands.
 
@@ -45,7 +62,9 @@ public class LadderBot {
         }
 
         //Register our slash command listener
-        SlashCommandListener listener = new SlashCommandListener(connection);
+        SlashCommandListener listener = new SlashCommandListener(connection, completions);
+        client.on(ChatInputAutoCompleteEvent.class, listener::complete).subscribe();
+
         client.on(ChatInputInteractionEvent.class, listener::handle)
                 .then(client.onDisconnect())
                 .block(); // We use .block() as there is not another non-daemon thread and the jvm would close otherwise.
