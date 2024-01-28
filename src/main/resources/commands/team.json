@@ -63,7 +63,7 @@
           "autocomplete": true
         },
         {
-          "type": 3,
+          "type": 6,
           "name": "player_name",
           "description": "Player name",
           "required": true,

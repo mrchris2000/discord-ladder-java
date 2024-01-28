@@ -54,7 +54,7 @@ public class LadderBot {
 
          Using SpringBoot we can avoid all of this and use their resource pattern matcher to do this for us.
         */
-        List<String> commands = List.of( "team.json");
+        List<String> commands = List.of( "team.json", "player.json", "challenge.json");
         try {
             new GlobalCommandRegistrar(client.getRestClient(), connection).registerCommands(commands);
         } catch (Exception e) {

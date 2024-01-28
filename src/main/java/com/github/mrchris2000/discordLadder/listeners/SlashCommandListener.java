@@ -20,6 +20,8 @@ public class SlashCommandListener {
     public SlashCommandListener(Connection connection, AutoCompletes completes) {
         //We register our commands here when the class is initialized
         commands.add(new TeamCommand(connection, completes));
+        commands.add(new PlayerCommand(connection, completes));
+        commands.add(new ChallengeCommand(connection, completes));
     }
 
     public Mono<Void> handle(ChatInputInteractionEvent event) {

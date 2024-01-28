@@ -1,0 +1,19 @@
+{
+  "name": "player",
+  "description": "Tournament players",
+  "options": [
+    {
+      "type": 1,
+      "name": "join",
+      "description": "Join the tournament",
+      "options": [
+        {
+          "type": 6,
+          "name": "player_name",
+          "description": "Player name",
+          "required": true
+        }
+      ]
+    }
+  ]
+}

@@ -4,6 +4,7 @@ import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
+import discord4j.core.object.entity.User;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.core.spec.*;
 import discord4j.rest.util.Color;
@@ -53,8 +54,8 @@ public class TeamCommand implements SlashCommand {
                 String option = type.getOptions().get(type.getOptions().size() -1).getName();
                 if(option.equals("team_name"))
                     return event.respondWithSuggestions(completes.getTeamNames());
-                else
-                    return event.respondWithSuggestions(completes.getPlayerNames());
+                //else
+                    //return event.respondWithSuggestions(completes.getPlayerNames());
             }
         }
         return event.respondWithSuggestions(suggestions);
@@ -150,13 +151,21 @@ public class TeamCommand implements SlashCommand {
                         .map(ApplicationCommandInteractionOptionValue::asString)
                         .get();
 
-                String player_name = type.getOption("player_name").flatMap(ApplicationCommandInteractionOption::getValue)
-                        .map(ApplicationCommandInteractionOptionValue::asString)
+                Mono<User> player_name = type.getOption("player_name").flatMap(ApplicationCommandInteractionOption::getValue)
+                        .map(ApplicationCommandInteractionOptionValue::asUser)
                         .get();
 
+                String player_id = "";
+                try{
+                    st.executeQuery("select player_id from players where player_name like '"+player_name.block().getUsername()+"'");
+                    rs = st.getResultSet();
+                    while(rs.next()){
+                        player_id = player_id.concat( rs.getString("player_id"));
+                    }
+                }catch(Exception e){e.printStackTrace();}
                 st = connection.prepareStatement("INSERT INTO teams (team_name, player_one_id) VALUES (?,?)");
                 ((PreparedStatement) st).setString(1, team_name);
-                ((PreparedStatement) st).setString(2, player_name);
+                ((PreparedStatement) st).setInt(2, Integer.parseInt(player_id));
                 int row = ((PreparedStatement) st).executeUpdate();
 
                 return event.reply()
