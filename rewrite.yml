@@ -1,0 +1,15 @@
+type: specs.openrewrite.org/v1beta/recipe
+name: com.github.mrchris2000.discordLadder.DependencyVulnerabilityCheck
+displayName: Find and fix vulnerable dependencies example
+recipeList:
+  - org.openrewrite.java.dependencies.DependencyVulnerabilityCheck:
+      scope: compile
+      overrideManagedVersion: false
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: com.github.mrchris2000.discordLadder.DependencyList
+displayName: Dependency report example
+recipeList:
+  - org.openrewrite.java.dependencies.DependencyList:
+      scope: Compile
+      includeTransitive: false

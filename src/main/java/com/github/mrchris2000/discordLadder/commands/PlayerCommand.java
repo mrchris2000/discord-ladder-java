@@ -30,15 +30,15 @@ public class PlayerCommand implements SlashCommand {
         return "team";
     }
 
-    private Connection connection;
+    private final Connection connection;
 
-    private AutoCompletes completes;
+    private final AutoCompletes completes;
 
-    public Mono<Void> complete(ChatInputAutoCompleteEvent event){
+    public Mono<Void> complete(ChatInputAutoCompleteEvent event) {
         Statement st = null;
         ResultSet rs = null;
         List<ApplicationCommandOptionChoiceData> suggestions = new ArrayList<>();
-        if (event.getCommandName().equals("team")) {
+        if ("team".equals(event.getCommandName())) {
             if (event.getOption("create").isPresent()) {
                 return event.respondWithSuggestions(completes.getTeamNames());
             } else if (event.getOption("stats").isPresent()) {
@@ -49,11 +49,12 @@ public class PlayerCommand implements SlashCommand {
                     We need the subtype of the option.
                     Options are collective, so the current option is the last in the list.
                  */
-                String option = type.getOptions().get(type.getOptions().size() -1).getName();
-                if(option.equals("team_name"))
+                String option = type.getOptions().get(type.getOptions().size() - 1).getName();
+                if ("team_name".equals(option)) {
                     return event.respondWithSuggestions(completes.getTeamNames());
-                else
+                } else {
                     return event.respondWithSuggestions(completes.getPlayerNames());
+                }
             }
         }
         return event.respondWithSuggestions(suggestions);
@@ -88,15 +89,17 @@ public class PlayerCommand implements SlashCommand {
                 return event.reply()
                         .withEphemeral(false).withContent("<@508675578229162004> Added team: " + name);
             }
-        }catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            try{
-                if(rs != null)
+            try {
+                if (rs != null) {
                     rs.close();
-                if(st != null)
+                }
+                if (st != null) {
                     st.close();
-            }catch (Exception e){
+                }
+            } catch (Exception e) {
                 //Well this is fucked then...
                 e.printStackTrace();
             }

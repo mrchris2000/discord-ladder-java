@@ -22,6 +22,7 @@ public class SlashCommandListener {
         commands.add(new TeamCommand(connection, completes));
         commands.add(new PlayerCommand(connection, completes));
         commands.add(new ChallengeCommand(connection, completes));
+        commands.add(new LadderCommand(connection, completes));
     }
 
     public Mono<Void> handle(ChatInputInteractionEvent event) {

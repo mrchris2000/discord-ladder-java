@@ -25,34 +25,34 @@ public class AutoCompletes {
     GatewayDiscordClient client;
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(LadderBot.class);
 
-    public AutoCompletes(GatewayDiscordClient client, Connection connection){
+    public AutoCompletes(GatewayDiscordClient client, Connection connection) {
         this.client = client;
         this.connection = connection;
     }
 
     //Register players to the collection of players that are included
-    public boolean addPlayers(){
+    public boolean addPlayers() {
         Iterator<Guild> guilds = client.getGuilds().toIterable().iterator();
-        while(guilds.hasNext())
+        while (guilds.hasNext())
         {
             Guild guild = guilds.next();
 
-            LOGGER.debug("Guild: "+ guild.getName() + " : "+guild.getId());
+            LOGGER.debug("Guild: " + guild.getName() + " : " + guild.getId());
             Iterator<Role> roles = guild.getRoles().toIterable().iterator();
-            while(roles.hasNext()){
+            while (roles.hasNext()) {
                 Role role = roles.next();
-                LOGGER.debug(""+ role.getName() + " : " + role.getId());
+                LOGGER.debug("" + role.getName() + " : " + role.getId());
             }
 
             Iterator<Member> members = guild.getMembers().toIterable().iterator();
-            while(members.hasNext()){
+            while (members.hasNext()) {
                 Member member = members.next();
                 LOGGER.debug("Members: " + member.getDisplayName() + " : " + member.getId());
                 Iterator<Role> memberRoles = guild.getRoles().toIterable().iterator();
-                while(memberRoles.hasNext()){
+                while (memberRoles.hasNext()) {
                     Role memberRole = memberRoles.next();
-                    LOGGER.debug("Member: " + member.getDisplayName() +" : Role: "+ memberRole.getName() + " : RoleID:" + memberRole.getId());
-                    if(memberRole.getId().asString().equals("1194596619253981204")){
+                    LOGGER.debug("Member: " + member.getDisplayName() + " : Role: " + memberRole.getName() + " : RoleID:" + memberRole.getId());
+                    if ("1194596619253981204".equals(memberRole.getId().asString())) {
                         addPlayerToDB(member);
                         LOGGER.warn("Member has required role. Add to DB :)");
                     }
@@ -62,7 +62,7 @@ public class AutoCompletes {
         return false;
     }
 
-    private void addPlayerToDB(Member member ){
+    private void addPlayerToDB(Member member) {
         Statement st = null;
         try {
             st = connection.createStatement();
@@ -71,14 +71,14 @@ public class AutoCompletes {
             ((PreparedStatement) st).setString(2, member.getId().asString());
             ((PreparedStatement) st).setBoolean(3, true);
             int row = ((PreparedStatement) st).executeUpdate();
-            LOGGER.debug("Adding user - rows created:"+row);
+            LOGGER.debug("Adding user - rows created:" + row);
             st.close();
-        }catch (Exception e){
+        } catch (Exception e) {
             LOGGER.error(e.getMessage());
         }
     }
 
-    public List<ApplicationCommandOptionChoiceData> getPlayerNames(){
+    public List<ApplicationCommandOptionChoiceData> getPlayerNames() {
         List<ApplicationCommandOptionChoiceData> suggestions = new ArrayList<>();
         Statement st = null;
         ResultSet rs = null;
@@ -88,28 +88,30 @@ public class AutoCompletes {
             rs = st.getResultSet();
             String output = "";
             while (rs.next()) {
-                LOGGER.debug("Adding player to suggestions: "+rs.getString("player_name"));
+                LOGGER.debug("Adding player to suggestions: " + rs.getString("player_name"));
                 suggestions.add(ApplicationCommandOptionChoiceData.builder().name(rs.getString("player_name")).value(rs.getString("player_name")).build());
             }
             return suggestions;
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             return suggestions;
-        }finally {
+        } finally {
 
-            try{
-                if(rs != null)
+            try {
+                if (rs != null) {
                     rs.close();
-                if(st != null)
+                }
+                if (st != null) {
                     st.close();
-            }catch (Exception e){
+                }
+            } catch (Exception e) {
                 //Well this is fucked then...
                 e.printStackTrace();
             }
         }
     }
 
-    public List<ApplicationCommandOptionChoiceData> getTeamNames(){
+    public List<ApplicationCommandOptionChoiceData> getTeamNames() {
         List<ApplicationCommandOptionChoiceData> suggestions = new ArrayList<>();
         Statement st = null;
         ResultSet rs = null;
@@ -119,21 +121,23 @@ public class AutoCompletes {
             rs = st.getResultSet();
             String output = "";
             while (rs.next()) {
-                LOGGER.debug("Adding team to suggestions: "+rs.getString("team_name"));
+                LOGGER.debug("Adding team to suggestions: " + rs.getString("team_name"));
                 suggestions.add(ApplicationCommandOptionChoiceData.builder().name(rs.getString("team_name")).value(rs.getString("team_name")).build());
             }
             return suggestions;
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             return suggestions;
-        }finally {
+        } finally {
 
-            try{
-                if(rs != null)
+            try {
+                if (rs != null) {
                     rs.close();
-                if(st != null)
+                }
+                if (st != null) {
                     st.close();
-            }catch (Exception e){
+                }
+            } catch (Exception e) {
                 //Well this is fucked then...
                 e.printStackTrace();
             }

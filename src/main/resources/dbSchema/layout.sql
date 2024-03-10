@@ -11,6 +11,7 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
 CREATE TABLE players (
     player_id SERIAL PRIMARY KEY,
     player_name VARCHAR(100) UNIQUE NOT NULL,
+    discord_id TEXT UNIQUE NOT NULL,
     fafName VARCHAR(100) UNIQUE,
     active BOOLEAN,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

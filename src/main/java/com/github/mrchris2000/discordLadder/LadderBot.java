@@ -4,14 +4,14 @@ import com.github.mrchris2000.discordLadder.infra.AutoCompletes;
 import com.github.mrchris2000.discordLadder.listeners.SlashCommandListener;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
+import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
+import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.*;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.Role;
 import discord4j.core.object.entity.User;
 import discord4j.discordjson.json.*;
-import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
-import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.gateway.intent.Intent;
 import discord4j.gateway.intent.IntentSet;
 import org.slf4j.Logger;
@@ -54,7 +54,7 @@ public class LadderBot {
 
          Using SpringBoot we can avoid all of this and use their resource pattern matcher to do this for us.
         */
-        List<String> commands = List.of( "team.json", "player.json", "challenge.json");
+        List<String> commands = List.of("team.json", "player.json", "challenge.json", "ladder.json");
         try {
             new GlobalCommandRegistrar(client.getRestClient(), connection).registerCommands(commands);
         } catch (Exception e) {

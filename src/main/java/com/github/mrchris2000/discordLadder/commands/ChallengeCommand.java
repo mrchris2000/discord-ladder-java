@@ -5,8 +5,8 @@ import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
-import discord4j.core.object.component.Button;
 import discord4j.core.object.component.ActionRow;
+import discord4j.core.object.component.Button;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
 import discord4j.core.spec.MessageCreateSpec;
@@ -26,6 +26,7 @@ public class ChallengeCommand implements SlashCommand {
         this.connection = connection;
         this.completes = completes;
     }
+
     //Challenge 2 up at most
     //No response after 5 days auto default
     //default means challenger goes above challengee
@@ -37,15 +38,15 @@ public class ChallengeCommand implements SlashCommand {
         return "challenge";
     }
 
-    private Connection connection;
+    private final Connection connection;
 
-    private AutoCompletes completes;
+    private final AutoCompletes completes;
 
-    public Mono<Void> complete(ChatInputAutoCompleteEvent event){
+    public Mono<Void> complete(ChatInputAutoCompleteEvent event) {
         Statement st = null;
         ResultSet rs = null;
         List<ApplicationCommandOptionChoiceData> suggestions = new ArrayList<>();
-        if (event.getCommandName().equals("team")) {
+        if ("team".equals(event.getCommandName())) {
             if (event.getOption("create").isPresent()) {
                 return event.respondWithSuggestions(completes.getTeamNames());
             } else if (event.getOption("stats").isPresent()) {
@@ -56,11 +57,12 @@ public class ChallengeCommand implements SlashCommand {
                     We need the subtype of the option.
                     Options are collective, so the current option is the last in the list.
                  */
-                String option = type.getOptions().get(type.getOptions().size() -1).getName();
-                if(option.equals("team_name"))
+                String option = type.getOptions().get(type.getOptions().size() - 1).getName();
+                if ("team_name".equals(option)) {
                     return event.respondWithSuggestions(completes.getTeamNames());
-                else
+                } else {
                     return event.respondWithSuggestions(completes.getPlayerNames());
+                }
             }
         }
         return event.respondWithSuggestions(suggestions);
@@ -84,7 +86,7 @@ public class ChallengeCommand implements SlashCommand {
 
             //Replace dummy team data with info from the backend.
             EmbedCreateSpec embed = EmbedCreateSpec.builder()
-                    .color(Color.of(255,153,0))
+                    .color(Color.of(255, 153, 0))
                     .title("Select your challenge:")
                     .author("Challenge options", "", "https://cdn.discordapp.com/avatars/1198703676987023450/8d7ab02c29bf51ac5f7c70615a2c3afb.png")
                     .description("Alpha Team (<@508675578229162004> and <@1198703676987023450>) \nor\n Bravo Team (<@508675578229162004> and <@1198703676987023450>)")
@@ -105,22 +107,23 @@ public class ChallengeCommand implements SlashCommand {
             Button successButton = Button.success("successButton-id", "Bravo Team");
 
 
-
             InteractionApplicationCommandCallbackSpec messageSpec = InteractionApplicationCommandCallbackSpec.builder()
                     .addEmbed(embed)
                     .addComponent(ActionRow.of(dangerButton, successButton))
                     .build();
 
             return event.reply(messageSpec);
-        }catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            try{
-                if(rs != null)
+            try {
+                if (rs != null) {
                     rs.close();
-                if(st != null)
+                }
+                if (st != null) {
                     st.close();
-            }catch (Exception e){
+                }
+            } catch (Exception e) {
                 //Well this is fucked then...
                 e.printStackTrace();
             }

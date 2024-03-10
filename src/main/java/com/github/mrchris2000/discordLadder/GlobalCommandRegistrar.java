@@ -85,7 +85,9 @@ public class GlobalCommandRegistrar {
     private static String getResourceFileAsString(String fileName) throws IOException {
         ClassLoader classLoader = ClassLoader.getSystemClassLoader();
         try (InputStream resourceAsStream = classLoader.getResourceAsStream(fileName)) {
-            if (resourceAsStream == null) return null;
+            if (resourceAsStream == null) {
+                return null;
+            }
             try (InputStreamReader inputStreamReader = new InputStreamReader(resourceAsStream);
                  BufferedReader reader = new BufferedReader(inputStreamReader)) {
                 return reader.lines().collect(Collectors.joining(System.lineSeparator()));

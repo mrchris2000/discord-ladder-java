@@ -1,24 +1,25 @@
 package com.github.mrchris2000.discordLadder.commands;
+
 import com.github.mrchris2000.discordLadder.infra.AutoCompletes;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.entity.User;
-import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.core.spec.*;
+import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.rest.util.Color;
 import reactor.core.publisher.Mono;
 
-import java.time.format.*;
-import java.time.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.text.DateFormat;
+import java.time.*;
 import java.time.Instant;
 import java.time.ZonedDateTime;
+import java.time.format.*;
 import java.util.*;
 
 public class TeamCommand implements SlashCommand {
@@ -32,15 +33,15 @@ public class TeamCommand implements SlashCommand {
         return "team";
     }
 
-    private Connection connection;
+    private final Connection connection;
 
-    private AutoCompletes completes;
+    private final AutoCompletes completes;
 
-    public Mono<Void> complete(ChatInputAutoCompleteEvent event){
+    public Mono<Void> complete(ChatInputAutoCompleteEvent event) {
         Statement st = null;
         ResultSet rs = null;
         List<ApplicationCommandOptionChoiceData> suggestions = new ArrayList<>();
-        if (event.getCommandName().equals("team")) {
+        if ("team".equals(event.getCommandName())) {
             if (event.getOption("create").isPresent()) {
                 return event.respondWithSuggestions(completes.getTeamNames());
             } else if (event.getOption("stats").isPresent()) {
@@ -51,9 +52,10 @@ public class TeamCommand implements SlashCommand {
                     We need the subtype of the option.
                     Options are collective, so the current option is the last in the list.
                  */
-                String option = type.getOptions().get(type.getOptions().size() -1).getName();
-                if(option.equals("team_name"))
+                String option = type.getOptions().get(type.getOptions().size() - 1).getName();
+                if ("team_name".equals(option)) {
                     return event.respondWithSuggestions(completes.getTeamNames());
+                }
                 //else
                     //return event.respondWithSuggestions(completes.getPlayerNames());
             }
@@ -94,8 +96,8 @@ public class TeamCommand implements SlashCommand {
                 st.executeQuery("select team_name from teams");
                 rs = st.getResultSet();
                 String output = "Current teams:\n";
-                while(rs.next()){
-                    output = output.concat( rs.getString("team_name")+ "\n");
+                while (rs.next()) {
+                    output = output.concat(rs.getString("team_name") + "\n");
                 }
 
 
@@ -156,13 +158,15 @@ public class TeamCommand implements SlashCommand {
                         .get();
 
                 String player_id = "";
-                try{
-                    st.executeQuery("select player_id from players where player_name like '"+player_name.block().getUsername()+"'");
+                try {
+                    st.executeQuery("select player_id from players where player_name like '" + player_name.block().getUsername() + "'");
                     rs = st.getResultSet();
-                    while(rs.next()){
-                        player_id = player_id.concat( rs.getString("player_id"));
+                    while (rs.next()) {
+                        player_id = player_id.concat(rs.getString("player_id"));
                     }
-                }catch(Exception e){e.printStackTrace();}
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
                 st = connection.prepareStatement("INSERT INTO teams (team_name, player_one_id) VALUES (?,?)");
                 ((PreparedStatement) st).setString(1, team_name);
                 ((PreparedStatement) st).setInt(2, Integer.parseInt(player_id));
@@ -171,15 +175,17 @@ public class TeamCommand implements SlashCommand {
                 return event.reply()
                         .withEphemeral(false).withContent(player_name + " added to team: " + team_name);
             }
-        }catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            try{
-                if(rs != null)
+            try {
+                if (rs != null) {
                     rs.close();
-                if(st != null)
+                }
+                if (st != null) {
                     st.close();
-            }catch (Exception e){
+                }
+            } catch (Exception e) {
                 //Well this is fucked then...
                 e.printStackTrace();
             }
