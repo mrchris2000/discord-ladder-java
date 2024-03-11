@@ -28,7 +28,7 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.7.1</version>
+            <version>42.7.2</version>
         </dependency>
         <dependency>
             <groupId>org.openrewrite.recipe</groupId>
@@ -52,6 +52,7 @@
                 <configuration>
                     <activeRecipes>
                         <recipe>org.openrewrite.staticanalysis.CodeCleanup</recipe>
+                        <recipe>org.openrewrite.staticanalysis.UseLambdaForFunctionalInterface</recipe>
                         <recipe>org.openrewrite.java.format.AutoFormat</recipe>
                         <recipe>org.openrewrite.java.OrderImports</recipe>
                         <recipe>org.openrewrite.java.ai.ClassDefinitionLength</recipe>

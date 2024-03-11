@@ -80,7 +80,6 @@ public class ChallengeCommand implements SlashCommand {
         //System.out.println(event.toString());
         //ApplicationCommandInteractionOption root = event.getOption("team").get();
         Statement st = null;
-        ResultSet rs = null;
         try {
             st = connection.createStatement();
 
@@ -117,9 +116,6 @@ public class ChallengeCommand implements SlashCommand {
             e.printStackTrace();
         } finally {
             try {
-                if (rs != null) {
-                    rs.close();
-                }
                 if (st != null) {
                     st.close();
                 }

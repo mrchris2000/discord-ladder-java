@@ -63,9 +63,8 @@ public class AutoCompletes {
     }
 
     private void addPlayerToDB(Member member) {
-        Statement st = null;
+        Statement st;
         try {
-            st = connection.createStatement();
             st = connection.prepareStatement("INSERT INTO players (player_name, discord_id, active) VALUES (?,?,?)");
             ((PreparedStatement) st).setString(1, member.getDisplayName());
             ((PreparedStatement) st).setString(2, member.getId().asString());
