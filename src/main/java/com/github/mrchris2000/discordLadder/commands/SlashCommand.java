@@ -1,7 +1,9 @@
 package com.github.mrchris2000.discordLadder.commands;
 
+import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
+import discord4j.core.object.entity.Message;
 import reactor.core.publisher.Mono;
 
 import java.sql.Connection;
@@ -18,4 +20,6 @@ public interface SlashCommand {
     Mono<Void> handle(ChatInputInteractionEvent event);
 
     Mono<Void> complete(ChatInputAutoCompleteEvent event);
+
+    Mono<Message> buttons(ButtonInteractionEvent event);
 }

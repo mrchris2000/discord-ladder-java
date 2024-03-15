@@ -1,10 +1,12 @@
 package com.github.mrchris2000.discordLadder.commands;
 
 import com.github.mrchris2000.discordLadder.infra.AutoCompletes;
+import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
+import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.rest.util.Color;
@@ -58,7 +60,10 @@ public class PlayerCommand implements SlashCommand {
             }
         }
         return event.respondWithSuggestions(suggestions);
+    }
 
+    public Mono<Message> buttons(ButtonInteractionEvent event) {
+        return null;
     }
 
     @Override

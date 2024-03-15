@@ -1,11 +1,13 @@
 package com.github.mrchris2000.discordLadder.commands;
 
 import com.github.mrchris2000.discordLadder.infra.AutoCompletes;
+import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
+import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
@@ -40,8 +42,6 @@ public class LadderCommand implements SlashCommand {
     private final AutoCompletes completes;
 
     public Mono<Void> complete(ChatInputAutoCompleteEvent event) {
-        Statement st = null;
-        ResultSet rs = null;
         List<ApplicationCommandOptionChoiceData> suggestions = new ArrayList<>();
         if ("team".equals(event.getCommandName())) {
             if (event.getOption("create").isPresent()) {
@@ -63,7 +63,10 @@ public class LadderCommand implements SlashCommand {
             }
         }
         return event.respondWithSuggestions(suggestions);
+    }
 
+    public Mono<Message> buttons(ButtonInteractionEvent event) {
+        return null;
     }
 
     @Override
@@ -74,8 +77,6 @@ public class LadderCommand implements SlashCommand {
 
         In this case, there is no fear it will return empty/null as this is marked "required: true" in our json.
          */
-        //System.out.println(event.toString());
-        //ApplicationCommandInteractionOption root = event.getOption("team").get();
         Statement st = null;
         try {
             st = connection.createStatement();

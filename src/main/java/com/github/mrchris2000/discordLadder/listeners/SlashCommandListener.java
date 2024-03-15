@@ -2,8 +2,10 @@ package com.github.mrchris2000.discordLadder.listeners;
 
 import com.github.mrchris2000.discordLadder.commands.*;
 import com.github.mrchris2000.discordLadder.infra.AutoCompletes;
+import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
+import discord4j.core.object.entity.Message;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -45,6 +47,26 @@ public class SlashCommandListener {
                 .next()
                 //have our command class handle all the logic related to its specific command.
                 .flatMap(command -> command.complete(event));
+    }
+
+    public Mono<Message> buttons(ButtonInteractionEvent event) {
+        // Convert our array list to a flux that we can iterate through
+        String origin = "";
+        if (event.getCustomId().contains("challenge")) {
+            origin = "challenge";
+        } else if (event.getCustomId().contains("ladder")) {
+            origin = "ladder";
+        }
+        final String cmd = origin;
+
+        return Flux.fromIterable(commands)
+
+                //Filter out all commands that don't match the name of the command this event is for
+                .filter(command -> command.getName().equals(cmd))
+                // Get the first (and only) item in the flux that matches our filter
+                .next()
+                //have our command class handle all the logic related to its specific command.
+                .flatMap(command -> command.buttons(event));
     }
 
     public void setConnection(Connection connection) {

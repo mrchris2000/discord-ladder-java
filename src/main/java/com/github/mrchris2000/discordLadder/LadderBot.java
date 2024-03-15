@@ -4,6 +4,7 @@ import com.github.mrchris2000.discordLadder.infra.AutoCompletes;
 import com.github.mrchris2000.discordLadder.listeners.SlashCommandListener;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
+import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.*;
@@ -64,7 +65,7 @@ public class LadderBot {
         //Register our slash command listener
         SlashCommandListener listener = new SlashCommandListener(connection, completions);
         client.on(ChatInputAutoCompleteEvent.class, listener::complete).subscribe();
-
+        client.on(ButtonInteractionEvent.class, listener::buttons).subscribe();
         client.on(ChatInputInteractionEvent.class, listener::handle)
                 .then(client.onDisconnect())
                 .block(); // We use .block() as there is not another non-daemon thread and the jvm would close otherwise.

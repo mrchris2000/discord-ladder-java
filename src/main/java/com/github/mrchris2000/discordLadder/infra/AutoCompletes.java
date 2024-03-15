@@ -41,7 +41,7 @@ public class AutoCompletes {
             Iterator<Role> roles = guild.getRoles().toIterable().iterator();
             while (roles.hasNext()) {
                 Role role = roles.next();
-                LOGGER.debug("" + role.getName() + " : " + role.getId());
+                LOGGER.debug(role.getName() + " : " + role.getId());
             }
 
             Iterator<Member> members = guild.getMembers().toIterable().iterator();
