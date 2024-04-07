@@ -142,7 +142,7 @@ public class TeamCommand implements SlashCommand {
             }  else if (event.getOption("stats").isPresent()) {
                 ApplicationCommandInteractionOption type = event.getOption("stats").get();
 
-                String team = type.getOption("team").flatMap(ApplicationCommandInteractionOption::getValue)
+                String team_name = type.getOption("team").flatMap(ApplicationCommandInteractionOption::getValue)
                         .map(ApplicationCommandInteractionOptionValue::asString)
                         .get();
 
@@ -150,13 +150,29 @@ public class TeamCommand implements SlashCommand {
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy MM dd");
                 String text = date.format(formatter);
                 LocalDate parsedDate = LocalDate.parse(text, formatter);
+                String[] playerIDs = {"",""};
+
+                try {
+                    st.executeQuery("select * from players where current_team like '" + team_name + "'");
+                    rs = st.getResultSet();
+                    int i = 0;
+                    while (rs.next()) {
+                        playerIDs[i] = "<@" + (rs.getString("discord_id")) + ">";
+                        i++;
+                    }
+                    if(playerIDs[1].equals("")){
+                        playerIDs[1] = "Missing team mate :( ";
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
 
                 EmbedCreateSpec embed = EmbedCreateSpec.builder()
                         .color(Color.BLUE)
-                        .title(team)
+                        .title(team_name)
                         .url("https://discord4j.com")
                         .author("Team stats", "https://discord4j.com", "https://cdn.discordapp.com/avatars/1198703676987023450/8d7ab02c29bf51ac5f7c70615a2c3afb.png")
-                        .description("<@508675578229162004> and <@1198703676987023450>")
+                        .description( playerIDs[0] + " and " + playerIDs[1] + "")
                         .thumbnail("https://cdn.discordapp.com/avatars/1198703676987023450/8d7ab02c29bf51ac5f7c70615a2c3afb.png?size=256")
                         .addField("Total games played", "value", true)
                         .addField("Ladder position", "3", true)

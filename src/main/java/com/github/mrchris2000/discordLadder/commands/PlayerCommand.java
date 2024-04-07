@@ -118,7 +118,7 @@ public class PlayerCommand implements SlashCommand {
             } else if (event.getOption("leave").isPresent()) {
                 ApplicationCommandInteractionOption type = event.getOption("leave").get();
 
-                LOGGER.debug("Submitting user? : " + user.getUsername() + " :: " + user.getDisplayName());
+                LOGGER.debug("Submitting user? : " + user.getUsername() + " :: " + user.getDisplayName() + " :: discord_id : "+ user.getId().asString());
 
                 //Remove role
                 Iterator<Role> serverRoles = guild.getRoles().toIterable().iterator();
