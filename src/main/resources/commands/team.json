@@ -61,13 +61,6 @@
           "description": "Team name",
           "required": true,
           "autocomplete": true
-        },
-        {
-          "type": 6,
-          "name": "player_name",
-          "description": "Player name",
-          "required": true,
-          "autocomplete": true
         }
       ]
     },
@@ -80,13 +73,6 @@
           "type": 3,
           "name": "team_name",
           "description": "Team name",
-          "required": true,
-          "autocomplete": true
-        },
-        {
-          "type": 6,
-          "name": "player_name",
-          "description": "Player name",
           "required": true,
           "autocomplete": true
         }

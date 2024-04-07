@@ -6,9 +6,7 @@ import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
-import discord4j.core.object.entity.Guild;
-import discord4j.core.object.entity.Message;
-import discord4j.core.object.entity.User;
+import discord4j.core.object.entity.*;
 import discord4j.core.spec.*;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.rest.util.Color;
@@ -27,6 +25,8 @@ public class TeamCommand implements SlashCommand {
     public TeamCommand(Connection connection, AutoCompletes completes, Guild guild, Logger LOGGER) {
         this.connection = connection;
         this.completes = completes;
+        this.guild = guild;
+        this.LOGGER = LOGGER;
     }
 
     @Override
@@ -38,12 +38,18 @@ public class TeamCommand implements SlashCommand {
 
     private final AutoCompletes completes;
 
+    private final Guild guild;
+
+    private final Logger LOGGER;
+
     public Mono<Void> complete(ChatInputAutoCompleteEvent event) {
         Statement st = null;
         ResultSet rs = null;
         List<ApplicationCommandOptionChoiceData> suggestions = new ArrayList<>();
         if ("team".equals(event.getCommandName())) {
             if (event.getOption("create").isPresent()) {
+                return event.respondWithSuggestions(completes.getTeamNames());
+            } else if (event.getOption("remove").isPresent()) {
                 return event.respondWithSuggestions(completes.getTeamNames());
             } else if (event.getOption("stats").isPresent()) {
                 return event.respondWithSuggestions(completes.getTeamNames());
@@ -70,17 +76,23 @@ public class TeamCommand implements SlashCommand {
 
     @Override
     public Mono<Void> handle(ChatInputInteractionEvent event) {
-        /*
-        Since slash command options are optional according to discord, we will wrap it into the following function
-        that gets the value of our option as a String without chaining several .get() on all the optional values
-
-        In this case, there is no fear it will return empty/null as this is marked "required: true" in our json.
-         */
-        //System.out.println(event.toString());
-        //ApplicationCommandInteractionOption root = event.getOption("team").get();
         Statement st = null;
         ResultSet rs = null;
         try {
+            Boolean mem = false;
+            Member user = event.getInteraction().getMember().get();
+            Iterator<Role> userRoles = user.getRoles().toIterable().iterator();
+            while (userRoles.hasNext()) {
+                Role current = userRoles.next();
+                if(current.getName().contains("2v2 Participant")){
+                    mem = true;
+                    break;
+                }
+            }
+            if(!mem){
+                return event.reply()
+                        .withEphemeral(false).withContent("Sorry <@" + user.getId().asString() + "> you must be a tournament member to do this");
+            }
             st = connection.createStatement();
             if (event.getOption("create").isPresent()) {
                 ApplicationCommandInteractionOption type = event.getOption("create").get();
@@ -89,12 +101,28 @@ public class TeamCommand implements SlashCommand {
                         .map(ApplicationCommandInteractionOptionValue::asString)
                         .get();
 
+                //ToDo: We don't want duplicates..
                 st = connection.prepareStatement("INSERT INTO teams (team_name) VALUES (?)");
                 ((PreparedStatement) st).setString(1, name);
                 int row = ((PreparedStatement) st).executeUpdate();
 
                 return event.reply()
-                        .withEphemeral(false).withContent("<@508675578229162004> Added team: " + name);
+                        .withEphemeral(false).withContent("<@" + user.getId().asString() + "> added team: " + name);
+            } else if (event.getOption("remove").isPresent()) {
+                ApplicationCommandInteractionOption type = event.getOption("remove").get();
+                String name = type.getOption("team_name").flatMap(ApplicationCommandInteractionOption::getValue)
+                        .map(ApplicationCommandInteractionOptionValue::asString)
+                        .get();
+
+                //ToDo: Check team is empty before removal.
+                st = connection.prepareStatement("DELETE FROM teams WHERE team_name=?");
+                ((PreparedStatement) st).setString(1, name);
+                int row = ((PreparedStatement) st).executeUpdate();
+
+                //ToDo: Condense ladder up when team is removed
+
+                return event.reply()
+                        .withEphemeral(false).withContent("<@" + user.getId().asString() + "> removed team: " + name);
             } else if (event.getOption("list").isPresent()) {
 
                 st.executeQuery("select team_name from teams");
@@ -107,19 +135,7 @@ public class TeamCommand implements SlashCommand {
 
                 return event.reply()
                         .withEphemeral(false).withContent(output);
-            } else if (event.getOption("remove").isPresent()) {
-                ApplicationCommandInteractionOption type = event.getOption("remove").get();
-                String name = type.getOption("team_name").flatMap(ApplicationCommandInteractionOption::getValue)
-                        .map(ApplicationCommandInteractionOptionValue::asString)
-                        .get();
-
-                st = connection.prepareStatement("DELETE FROM teams WHERE team_name=?");
-                ((PreparedStatement) st).setString(1, name);
-                int row = ((PreparedStatement) st).executeUpdate();
-
-                return event.reply()
-                        .withEphemeral(false).withContent("Removing team: " + name);
-            } else if (event.getOption("stats").isPresent()) {
+            }  else if (event.getOption("stats").isPresent()) {
                 ApplicationCommandInteractionOption type = event.getOption("stats").get();
 
                 String team = type.getOption("team").flatMap(ApplicationCommandInteractionOption::getValue)
