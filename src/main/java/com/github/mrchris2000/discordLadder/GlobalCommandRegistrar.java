@@ -1,6 +1,7 @@
 package com.github.mrchris2000.discordLadder;
 
 import discord4j.common.JacksonResources;
+import discord4j.core.object.entity.Guild;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.rest.RestClient;
 import discord4j.rest.service.ApplicationService;
@@ -28,7 +29,7 @@ public class GlobalCommandRegistrar {
     // The name of the folder the commands json is in, inside our resources folder
     private static final String commandsFolderName = "commands/";
 
-    public GlobalCommandRegistrar(RestClient restClient, Connection connection) {
+    public GlobalCommandRegistrar(RestClient restClient, Connection connection, Guild guild) {
         this.restClient = restClient;
         this.dbConnection = connection;
     }

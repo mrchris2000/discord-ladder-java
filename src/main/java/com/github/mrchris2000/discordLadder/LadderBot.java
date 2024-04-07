@@ -35,7 +35,7 @@ public class LadderBot {
         props.setProperty("user", "ladder");
         props.setProperty("password", "discPwd#!");
         final Connection connection = DriverManager.getConnection("jdbc:postgresql://192.168.0.20:5432/discladder", props);
-
+        Guild guild = null;
 
         //Creates the gateway client and connects to the gateway
         final GatewayDiscordClient client = DiscordClientBuilder.create("MTE5ODcwMzY3Njk4NzAyMzQ1MA.G4Qh7M.sLXpAdfAMHmLggihWwXcsPplOfvn5W35F-aTkE").build()
@@ -45,6 +45,14 @@ public class LadderBot {
                 .block();
 
         //Set up user completes..?
+        Iterator<Guild> guilds = client.getGuilds().toIterable().iterator();
+        while (guilds.hasNext())
+        {
+            guild = guilds.next();
+            if(guild.getName().contains("MrChris's server")){
+                break;
+            }
+        }
         AutoCompletes completions = new AutoCompletes(client, connection);
         completions.addPlayers();
 
@@ -57,13 +65,13 @@ public class LadderBot {
         */
         List<String> commands = List.of("team.json", "player.json", "challenge.json", "ladder.json");
         try {
-            new GlobalCommandRegistrar(client.getRestClient(), connection).registerCommands(commands);
+            new GlobalCommandRegistrar(client.getRestClient(), connection, guild).registerCommands(commands);
         } catch (Exception e) {
             LOGGER.error("Error trying to register global slash commands", e);
         }
 
         //Register our slash command listener
-        SlashCommandListener listener = new SlashCommandListener(connection, completions);
+        SlashCommandListener listener = new SlashCommandListener(connection, completions, guild, LOGGER);
         client.on(ChatInputAutoCompleteEvent.class, listener::complete).subscribe();
         client.on(ButtonInteractionEvent.class, listener::buttons).subscribe();
         client.on(ChatInputInteractionEvent.class, listener::handle)

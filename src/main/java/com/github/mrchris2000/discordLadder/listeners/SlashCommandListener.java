@@ -5,9 +5,11 @@ import com.github.mrchris2000.discordLadder.infra.AutoCompletes;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
+import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import org.slf4j.Logger;
 
 import java.sql.Connection;
 import java.util.ArrayList;
@@ -19,12 +21,12 @@ public class SlashCommandListener {
 
     Connection connection;
 
-    public SlashCommandListener(Connection connection, AutoCompletes completes) {
+    public SlashCommandListener(Connection connection, AutoCompletes completes, Guild guild, Logger LOGGER) {
         //We register our commands here when the class is initialized
-        commands.add(new TeamCommand(connection, completes));
-        commands.add(new PlayerCommand(connection, completes));
-        commands.add(new ChallengeCommand(connection, completes));
-        commands.add(new LadderCommand(connection, completes));
+        commands.add(new TeamCommand(connection, completes, guild, LOGGER));
+        commands.add(new PlayerCommand(connection, completes, guild, LOGGER));
+        commands.add(new ChallengeCommand(connection, completes, guild, LOGGER));
+        commands.add(new LadderCommand(connection, completes, guild, LOGGER));
     }
 
     public Mono<Void> handle(ChatInputInteractionEvent event) {

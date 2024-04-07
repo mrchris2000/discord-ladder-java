@@ -10,10 +10,7 @@ import discord4j.core.object.entity.Role;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -31,6 +28,9 @@ public class AutoCompletes {
     }
 
     //Register players to the collection of players that are included
+    /*
+     * I can't recall why I needed this... it'll come to me.
+     */
     public boolean addPlayers() {
         Iterator<Guild> guilds = client.getGuilds().toIterable().iterator();
         while (guilds.hasNext())
@@ -48,13 +48,17 @@ public class AutoCompletes {
             while (members.hasNext()) {
                 Member member = members.next();
                 LOGGER.debug("Members: " + member.getDisplayName() + " : " + member.getId());
-                Iterator<Role> memberRoles = guild.getRoles().toIterable().iterator();
-                while (memberRoles.hasNext()) {
-                    Role memberRole = memberRoles.next();
-                    LOGGER.debug("Member: " + member.getDisplayName() + " : Role: " + memberRole.getName() + " : RoleID:" + memberRole.getId());
-                    if ("1194596619253981204".equals(memberRole.getId().asString())) {
-                        addPlayerToDB(member);
-                        LOGGER.warn("Member has required role. Add to DB :)");
+                Iterator<Role>  serverRoles = guild.getRoles().toIterable().iterator();
+                while (serverRoles.hasNext()) {
+                    Role serverRole = serverRoles.next();
+                    Iterator<Role> memberRoles = member.getRoles().toIterable().iterator();
+                    while(memberRoles.hasNext()){
+                        Role memberRole = memberRoles.next();
+                        LOGGER.debug("Member: " + member.getDisplayName() + " : Role: " + memberRole.getName() + " : RoleID:" + memberRole.getId());
+                        if ("2v2 Participant".equals(memberRole.getName())) {
+                            LOGGER.warn("Member has required role:"+  memberRole.getName() + ". Add to DB :)");
+                            //addPlayerToDB(member);
+                        }
                     }
                 }
             }
@@ -63,16 +67,21 @@ public class AutoCompletes {
     }
 
     private void addPlayerToDB(Member member) {
-        Statement st;
+        PreparedStatement st;
         try {
-            st = connection.prepareStatement("INSERT INTO players (player_name, discord_id, active) VALUES (?,?,?)");
-            ((PreparedStatement) st).setString(1, member.getDisplayName());
-            ((PreparedStatement) st).setString(2, member.getId().asString());
-            ((PreparedStatement) st).setBoolean(3, true);
-            int row = ((PreparedStatement) st).executeUpdate();
+            connection.setAutoCommit(true);
+            st = connection.prepareStatement("INSERT INTO players (player_name, discord_id, fafName, active) VALUES (?, ?, ?, ?);");
+            st.setString(1, member.getDisplayName());
+            st.setString(2, member.getId().asString());
+            st.setString(3, member.getDisplayName());
+            st.setBoolean(4, true);
+            LOGGER.debug("Statement ====== " + st.toString());
+            int row = st.executeUpdate();
+
             LOGGER.debug("Adding user - rows created:" + row);
             st.close();
         } catch (Exception e) {
+            e.printStackTrace();
             LOGGER.error(e.getMessage());
         }
     }

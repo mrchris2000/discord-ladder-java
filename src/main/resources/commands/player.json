@@ -5,15 +5,12 @@
     {
       "type": 1,
       "name": "join",
-      "description": "Join the tournament",
-      "options": [
-        {
-          "type": 6,
-          "name": "player_name",
-          "description": "Player name",
-          "required": true
-        }
-      ]
+      "description": "Join the tournament"
+    },
+    {
+      "type": 1,
+      "name": "leave",
+      "description": "Leave the tournament"
     }
   ]
 }

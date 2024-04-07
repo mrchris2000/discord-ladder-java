@@ -7,21 +7,22 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
+import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.rest.util.Color;
+import org.slf4j.Logger;
 import reactor.core.publisher.Mono;
 
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
 public class LadderCommand implements SlashCommand {
-    public LadderCommand(Connection connection, AutoCompletes completes) {
+    public LadderCommand(Connection connection, AutoCompletes completes, Guild guild, Logger LOGGER) {
         this.connection = connection;
         this.completes = completes;
     }
@@ -43,7 +44,7 @@ public class LadderCommand implements SlashCommand {
 
     public Mono<Void> complete(ChatInputAutoCompleteEvent event) {
         List<ApplicationCommandOptionChoiceData> suggestions = new ArrayList<>();
-        if ("team".equals(event.getCommandName())) {
+        if ("ladder".equals(event.getCommandName())) {
             if (event.getOption("create").isPresent()) {
                 return event.respondWithSuggestions(completes.getTeamNames());
             } else if (event.getOption("stats").isPresent()) {

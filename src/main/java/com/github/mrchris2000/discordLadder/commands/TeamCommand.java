@@ -6,26 +6,25 @@ import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
+import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.spec.*;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.rest.util.Color;
+import org.slf4j.Logger;
 import reactor.core.publisher.Mono;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
-import java.text.DateFormat;
 import java.time.*;
-import java.time.Instant;
-import java.time.ZonedDateTime;
 import java.time.format.*;
 import java.util.*;
 
 public class TeamCommand implements SlashCommand {
-    public TeamCommand(Connection connection, AutoCompletes completes) {
+    public TeamCommand(Connection connection, AutoCompletes completes, Guild guild, Logger LOGGER) {
         this.connection = connection;
         this.completes = completes;
     }
@@ -151,8 +150,8 @@ public class TeamCommand implements SlashCommand {
 
                 return event.reply()
                         .withEphemeral(false).withEmbeds(embed);
-            } else if (event.getOption("add").isPresent()) {
-                ApplicationCommandInteractionOption type = event.getOption("add").get();
+            } else if (event.getOption("join").isPresent()) {
+                ApplicationCommandInteractionOption type = event.getOption("join").get();
 
                 String team_name = type.getOption("team_name").flatMap(ApplicationCommandInteractionOption::getValue)
                         .map(ApplicationCommandInteractionOptionValue::asString)
@@ -178,7 +177,35 @@ public class TeamCommand implements SlashCommand {
                 int row = ((PreparedStatement) st).executeUpdate();
 
                 return event.reply()
-                        .withEphemeral(false).withContent(player_name + " added to team: " + team_name);
+                        .withEphemeral(false).withContent(player_name + " joined team: " + team_name);
+            } else if (event.getOption("leave").isPresent()) {
+                ApplicationCommandInteractionOption type = event.getOption("leave").get();
+
+                String team_name = type.getOption("team_name").flatMap(ApplicationCommandInteractionOption::getValue)
+                        .map(ApplicationCommandInteractionOptionValue::asString)
+                        .get();
+
+                Mono<User> player_name = type.getOption("player_name").flatMap(ApplicationCommandInteractionOption::getValue)
+                        .map(ApplicationCommandInteractionOptionValue::asUser)
+                        .get();
+
+                String player_id = "";
+                try {
+                    st.executeQuery("select player_id from players where player_name like '" + player_name.block().getUsername() + "'");
+                    rs = st.getResultSet();
+                    while (rs.next()) {
+                        player_id = player_id.concat(rs.getString("player_id"));
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                st = connection.prepareStatement("DELETE FROM teams where team_name=? and player_one_id=?");
+                ((PreparedStatement) st).setString(1, team_name);
+                ((PreparedStatement) st).setInt(2, Integer.parseInt(player_id));
+                int row = ((PreparedStatement) st).executeUpdate();
+
+                return event.reply()
+                        .withEphemeral(false).withContent(player_name + " left team: " + team_name);
             }
         } catch (Exception e) {
             e.printStackTrace();

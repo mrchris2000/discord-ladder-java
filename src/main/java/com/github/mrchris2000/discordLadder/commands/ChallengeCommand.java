@@ -5,30 +5,24 @@ import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
-import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
-import discord4j.core.object.component.*;
-import discord4j.core.object.component.ActionComponent;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
-import discord4j.core.object.component.LayoutComponent;
+import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
-import discord4j.core.spec.MessageCreateSpec;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.rest.util.Color;
+import org.slf4j.Logger;
 import reactor.core.publisher.Mono;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.*;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class ChallengeCommand implements SlashCommand {
-    public ChallengeCommand(Connection connection, AutoCompletes completes) {
+    public ChallengeCommand(Connection connection, AutoCompletes completes, Guild guild, Logger LOGGER) {
         this.connection = connection;
         this.completes = completes;
     }
@@ -50,7 +44,7 @@ public class ChallengeCommand implements SlashCommand {
 
     public Mono<Void> complete(ChatInputAutoCompleteEvent event) {
         List<ApplicationCommandOptionChoiceData> suggestions = new ArrayList<>();
-        if ("team".equals(event.getCommandName())) {
+        if (getName().equals(event.getCommandName())) {
             if (event.getOption("create").isPresent()) {
                 return event.respondWithSuggestions(completes.getTeamNames());
             } else if (event.getOption("stats").isPresent()) {
@@ -83,10 +77,10 @@ public class ChallengeCommand implements SlashCommand {
         while (butt.hasNext()) {
             Button button = (Button) butt.next();
             button.disabled();
-            if (button.getLabel().get().equals("Alpha Team")) {
+            if ("Alpha Team".equals(button.getLabel().get())) {
                 dangerButton = Button.danger(button.getCustomId().get(), "Alpha Team").disabled();
             }
-            if (button.getLabel().get().equals("Bravo Team")) {
+            if ("Bravo Team".equals(button.getLabel().get())) {
                 successButton = Button.success(button.getCustomId().get(), "Bravo Team").disabled();
             }
             if (button.getCustomId().get().contains(event.getCustomId())) {
