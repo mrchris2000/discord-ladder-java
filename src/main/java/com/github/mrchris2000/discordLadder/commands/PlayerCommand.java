@@ -86,11 +86,11 @@ public class PlayerCommand implements SlashCommand {
         //ApplicationCommandInteractionOption root = event.getOption("team").get();
         Statement st = null;
         try {
+            Member user = event.getInteraction().getMember().get();
             st = connection.createStatement();
             if (event.getOption("join").isPresent()) {
                 ApplicationCommandInteractionOption type = event.getOption("join").get();
 
-                Member user = event.getInteraction().getMember().get();
                 LOGGER.debug("Submitting user? : " + user.getUsername() + " :: " + user.getDisplayName());
 
                 //Assign role
@@ -114,11 +114,10 @@ public class PlayerCommand implements SlashCommand {
 
 
                 return event.reply()
-                        .withEphemeral(false).withContent("<@508675578229162004> Added team: " + user.getUsername());
+                        .withEphemeral(false).withContent("Hey, <@" + user.getId().asString() + "> you've joined the tournament");
             } else if (event.getOption("leave").isPresent()) {
                 ApplicationCommandInteractionOption type = event.getOption("leave").get();
 
-                Member user = event.getInteraction().getMember().get();
                 LOGGER.debug("Submitting user? : " + user.getUsername() + " :: " + user.getDisplayName());
 
                 //Remove role
@@ -138,7 +137,7 @@ public class PlayerCommand implements SlashCommand {
                 int row = ((PreparedStatement) st).executeUpdate();
 
                 return event.reply()
-                        .withEphemeral(false).withContent("<@508675578229162004> left tournament: " + user.getUsername());
+                        .withEphemeral(false).withContent("Sad to see you go, <@" + user.getId().asString() + ">");
             }
         } catch (Exception e) {
             if(e.getMessage().contains("duplicate")){
@@ -157,7 +156,7 @@ public class PlayerCommand implements SlashCommand {
             }
         }
         return  event.reply()
-                .withEphemeral(true).withContent("Team command failed, no valid option found");
+                .withEphemeral(true).withContent("Player command failed, no valid option found");
     }
 
 
