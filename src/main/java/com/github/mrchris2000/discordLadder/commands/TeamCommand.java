@@ -51,7 +51,9 @@ public class TeamCommand implements SlashCommand {
                 return event.respondWithSuggestions(completes.getTeamNames());
             } else if (event.getOption("remove").isPresent()) {
                 return event.respondWithSuggestions(completes.getTeamNames());
-            } else if (event.getOption("stats").isPresent()) {
+            } else if (event.getOption("join").isPresent()) {
+                return event.respondWithSuggestions(completes.getTeamNames());
+            }else if (event.getOption("stats").isPresent()) {
                 return event.respondWithSuggestions(completes.getTeamNames());
             } else if (event.getOption("add").isPresent()) {
                 ApplicationCommandInteractionOption type = event.getOption("add").get();
@@ -173,13 +175,10 @@ public class TeamCommand implements SlashCommand {
                         .map(ApplicationCommandInteractionOptionValue::asString)
                         .get();
 
-                Mono<User> player_name = type.getOption("player_name").flatMap(ApplicationCommandInteractionOption::getValue)
-                        .map(ApplicationCommandInteractionOptionValue::asUser)
-                        .get();
-
+                //What's the users player_id as this will be different from their Discord Snowflake ID
                 String player_id = "";
                 try {
-                    st.executeQuery("select player_id from players where player_name like '" + player_name.block().getUsername() + "'");
+                    st.executeQuery("select player_id from players where player_name like '" + user.getUsername() + "'");
                     rs = st.getResultSet();
                     while (rs.next()) {
                         player_id = player_id.concat(rs.getString("player_id"));
@@ -187,13 +186,51 @@ public class TeamCommand implements SlashCommand {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                st = connection.prepareStatement("INSERT INTO teams (team_name, player_one_id) VALUES (?,?)");
-                ((PreparedStatement) st).setString(1, team_name);
-                ((PreparedStatement) st).setInt(2, Integer.parseInt(player_id));
+
+
+                //Should probably have a team class... can't be arsed, do that later.
+                int player1_id=0;
+                int player2_id=0;
+                String playerNumber = "one";
+                //Get existing team details
+                try {
+                    st.executeQuery("select * from teams where team_name='"+team_name+"'");
+                    rs = st.getResultSet();
+                    while (rs.next()) {
+                        player1_id = rs.getInt("player_one_id");
+                        if(player1_id != 0){
+                            playerNumber = "two";
+                        }
+                        player2_id = rs.getInt("player_two_id");
+                        if(player2_id != 0 ){
+                            playerNumber = "full";
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                //Is team full
+                if(playerNumber.equals("full")){
+                    return event.reply()
+                            .withEphemeral(false).withContent("Sorry <@" + user.getId().asString() + "> team "+ team_name +" is currently full.");
+                }
+                //Player is already on the team?
+                if(player1_id == Integer.parseInt(player_id)){
+                    return event.reply()
+                            .withEphemeral(false).withContent("Hey  <@" + user.getId().asString() + ">, you're already a member of' " + team_name);
+                } else if(player2_id == Integer.parseInt(player_id)){
+                    return event.reply()
+                            .withEphemeral(false).withContent("Hey  <@" + user.getId().asString() + ">, you're already a member of' " + team_name);
+                }
+
+                //Add either p1 or p2
+                st = connection.prepareStatement("UPDATE teams SET player_" + playerNumber + "_id = ? WHERE team_name = ?");
+                ((PreparedStatement) st).setInt(1, Integer.parseInt(player_id));
+                ((PreparedStatement) st).setString(2, team_name);
                 int row = ((PreparedStatement) st).executeUpdate();
 
                 return event.reply()
-                        .withEphemeral(false).withContent(player_name + " joined team: " + team_name);
+                        .withEphemeral(false).withContent("Congratulations  <@" + user.getId().asString() + ">, you just joined " + team_name);
             } else if (event.getOption("leave").isPresent()) {
                 ApplicationCommandInteractionOption type = event.getOption("leave").get();
 
