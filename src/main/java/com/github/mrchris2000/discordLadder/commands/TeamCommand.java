@@ -152,7 +152,7 @@ public class TeamCommand implements SlashCommand {
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy MM dd");
                 String text = date.format(formatter);
                 LocalDate parsedDate = LocalDate.parse(text, formatter);
-                String[] playerIDs = {"",""};
+                String[] playerIDs = {"Missing team mate :(","Missing team mate :("};
                 String ladderPos = "\u200B";
                 int team_id = 0;
                 String matches = "";
@@ -169,12 +169,11 @@ public class TeamCommand implements SlashCommand {
                     rs = stPlayerIds.executeQuery();
                     int i = 0;
                     while (rs.next()) {
-                        playerIDs[i] = "<@" + (rs.getString("discord_id")) + ">";
+                        String playerName = rs.getString("discord_id");
+                        playerIDs[i] = "<@" + playerName + ">";
                         i++;
                     }
-                    if(playerIDs[1].equals("")){
-                        playerIDs[1] = "Missing team mate :( ";
-                    }
+
                     LOGGER.debug("Team ID: "+team_id);
                     PreparedStatement stMatchesCount = connection.prepareStatement("SELECT COUNT(*) from matches where team_one_id = ? OR team_two_id = ?");
                     stMatchesCount.setInt(1, team_id);
