@@ -4,6 +4,7 @@ import com.github.mrchris2000.discordLadder.infra.AutoCompletes;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
+import discord4j.core.object.Embed;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.entity.*;
@@ -13,15 +14,15 @@ import discord4j.rest.util.Color;
 import org.slf4j.Logger;
 import reactor.core.publisher.Mono;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import java.sql.*;
 import java.time.*;
 import java.time.format.*;
 import java.util.*;
 
 public class TeamCommand implements SlashCommand {
+
+    private EmbedCreateSpec embedCreateSpec;
+
     public TeamCommand(Connection connection, AutoCompletes completes, Guild guild, Logger LOGGER) {
         this.connection = connection;
         this.completes = completes;
@@ -146,15 +147,26 @@ public class TeamCommand implements SlashCommand {
                         .map(ApplicationCommandInteractionOptionValue::asString)
                         .get();
 
+                EmbedCreateSpec embed = null;
                 LocalDate date = LocalDate.now();
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy MM dd");
                 String text = date.format(formatter);
                 LocalDate parsedDate = LocalDate.parse(text, formatter);
                 String[] playerIDs = {"",""};
-
+                String ladderPos = "\u200B";
+                int team_id = 0;
+                String matches = "";
                 try {
-                    st.executeQuery("select * from players where current_team like '" + team_name + "'");
-                    rs = st.getResultSet();
+                    PreparedStatement stTeamId = connection.prepareStatement("select team_id from teams where team_name like ?");
+                    stTeamId.setString(1, team_name);
+                    ResultSet rsTeamId = stTeamId.executeQuery();
+                    if (rsTeamId.next()) { // Assuming there is at least one row in the result set
+                        team_id = rsTeamId.getInt(1);
+                    }
+
+                    PreparedStatement stPlayerIds = connection.prepareStatement("select discord_id from players where current_team like ?");
+                    stPlayerIds.setString(1, team_name);
+                    rs = stPlayerIds.executeQuery();
                     int i = 0;
                     while (rs.next()) {
                         playerIDs[i] = "<@" + (rs.getString("discord_id")) + ">";
@@ -163,26 +175,103 @@ public class TeamCommand implements SlashCommand {
                     if(playerIDs[1].equals("")){
                         playerIDs[1] = "Missing team mate :( ";
                     }
+                    LOGGER.debug("Team ID: "+team_id);
+                    PreparedStatement stMatchesCount = connection.prepareStatement("SELECT COUNT(*) from matches where team_one_id = ? OR team_two_id = ?");
+                    stMatchesCount.setInt(1, team_id);
+                    stMatchesCount.setInt(2, team_id);
+                    ResultSet rsMatches = stMatchesCount.executeQuery();
+                    if (rsMatches.next()) { // Assuming there is at least one row in the result set
+                        matches = String.valueOf(rsMatches.getInt(1));
+                    } else {
+                        matches = "No matches found";
+                    }
+                    PreparedStatement stLadderPos = connection.prepareStatement("SELECT rank from ladder where team_id = ?");
+                    stLadderPos.setInt(1, team_id);
+                    ResultSet rsLadder = stLadderPos.executeQuery();
+                    if (rsMatches.next()) { // Assuming there is at least one row in the result set
+                        ladderPos = String.valueOf(rsMatches.getInt(1));
+                    } else {
+                        ladderPos = "Unranked";
+                    }
+
+
+                    embed = EmbedCreateSpec.builder()
+                            .color(Color.BLUE)
+                            .title(team_name)
+                            .url("https://discord4j.com")
+                            .author("Team stats", "https://discord4j.com", "https://cdn.discordapp.com/avatars/1198703676987023450/8d7ab02c29bf51ac5f7c70615a2c3afb.png")
+                            .description( playerIDs[0] + " and " + playerIDs[1] + "")
+                            .thumbnail("https://cdn.discordapp.com/avatars/1198703676987023450/8d7ab02c29bf51ac5f7c70615a2c3afb.png?size=256")
+                            .addField("Total games played", matches, true)
+                            .addField("Ladder position", ladderPos, true)
+                            .addField("\u200B", "\u200B", false)
+                            .image("https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/2da776de-a93a-4c96-92bf-1bc81981d4c5/d9444o9-521d0b63-e19a-4f4f-807e-4f12a77544b9.png/v1/fill/w_1024,h_576,q_80,strp/supreme_commander_forged_alliance_faf_flat_by_joyden_d9444o9-fullview.jpg?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7ImhlaWdodCI6Ijw9NTc2IiwicGF0aCI6IlwvZlwvMmRhNzc2ZGUtYTkzYS00Yzk2LTkyYmYtMWJjODE5ODFkNGM1XC9kOTQ0NG85LTUyMWQwYjYzLWUxOWEtNGY0Zi04MDdlLTRmMTJhNzc1NDRiOS5wbmciLCJ3aWR0aCI6Ijw9MTAyNCJ9XV0sImF1ZCI6WyJ1cm46c2VydmljZTppbWFnZS5vcGVyYXRpb25zIl19.5GQcNvC_dhl2wqEuXjbRvj-05fI3MMRTs6vvzkdThJY")
+                            .build();
+
+
+                    EmbedCreateSpec.Builder dynamic = EmbedCreateSpec.builder().from(embed);
+                    PreparedStatement matchDetails = connection.prepareStatement("WITH TeamMatches AS (\n" +
+                            "    SELECT\n" +
+                            "        m.match_id,\n" +
+                            "        CASE\n" +
+                            "            WHEN t.team_id = m.team_one_id THEN m.team_two_id\n" +
+                            "            ELSE m.team_one_id\n" +
+                            "        END AS opposition_id,\n" +
+                            "        TO_CHAR(m.match_date, 'DD-MM-YYYY HH24:MI') AS formatted_match_date,\n" +
+                            "        t.team_name AS team_name,\n" +
+                            "        m.winner\n" +
+                            "    FROM\n" +
+                            "        matches m\n" +
+                            "    JOIN teams t ON t.team_id = m.team_one_id OR t.team_id = m.team_two_id\n" +
+                            "    WHERE\n" +
+                            "        t.team_name = ?\n" +
+                            ")\n" +
+                            "SELECT\n" +
+                            "    tm.match_id,\n" +
+                            "    tm.formatted_match_date,\n" +
+                            "    tm.team_name,\n" +
+                            "    opp.team_name AS opposition_name,\n" +
+                            "    win.team_name AS winner_name\n" +
+                            "FROM\n" +
+                            "    TeamMatches tm\n" +
+                            "JOIN teams opp ON tm.opposition_id = opp.team_id\n" +
+                            "JOIN teams win ON tm.winner = win.team_id\n" +
+                            "ORDER BY\n" +
+                            "    tm.formatted_match_date DESC\n" +
+                            "LIMIT 5");
+                    matchDetails.setString(1, team_name);
+
+                    ResultSet rsMatchDetails = matchDetails.executeQuery();
+                    if(!matches.equals("0")) {
+                        LOGGER.debug("Rows: " + matches);
+                        String opposition = "";
+
+                        rsMatchDetails.next();
+                        String outcome = "";
+                        dynamic.addField("Played", rsMatchDetails.getString("opposition_name"), true);
+                        dynamic.addField("On", rsMatchDetails.getString("formatted_match_date"), true);
+                        if (!rsMatchDetails.getString("winner_name").equals(team_name)) {
+                            outcome = "Loss";
+                        } else {
+                            outcome = "Win";
+                        }
+                        dynamic.addField("Result", outcome, true);
+                        while (rsMatchDetails.next()) {
+                            dynamic.addField("\u200B", rsMatchDetails.getString("opposition_name"), true);
+                            dynamic.addField("\u200B", rsMatchDetails.getString("formatted_match_date"), true);
+                            if (!rsMatchDetails.getString("winner_name").equals(team_name)) {
+                                outcome = "Loss";
+                            } else {
+                                outcome = "Win";
+                            }
+                            dynamic.addField("Result", outcome, true);
+                        }
+                    }
+                    embed = dynamic.build();
+
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-
-                EmbedCreateSpec embed = EmbedCreateSpec.builder()
-                        .color(Color.BLUE)
-                        .title(team_name)
-                        .url("https://discord4j.com")
-                        .author("Team stats", "https://discord4j.com", "https://cdn.discordapp.com/avatars/1198703676987023450/8d7ab02c29bf51ac5f7c70615a2c3afb.png")
-                        .description( playerIDs[0] + " and " + playerIDs[1] + "")
-                        .thumbnail("https://cdn.discordapp.com/avatars/1198703676987023450/8d7ab02c29bf51ac5f7c70615a2c3afb.png?size=256")
-                        .addField("Total games played", "value", true)
-                        .addField("Ladder position", "3", true)
-                        .addField("\u200B", "\u200B", false)
-                        .addField("Played", "other team", true)
-                        .addField("On", parsedDate.toString(), true)
-                        .addField("Result", "Draw", true)
-                        .image("https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/2da776de-a93a-4c96-92bf-1bc81981d4c5/d9444o9-521d0b63-e19a-4f4f-807e-4f12a77544b9.png/v1/fill/w_1024,h_576,q_80,strp/supreme_commander_forged_alliance_faf_flat_by_joyden_d9444o9-fullview.jpg?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7ImhlaWdodCI6Ijw9NTc2IiwicGF0aCI6IlwvZlwvMmRhNzc2ZGUtYTkzYS00Yzk2LTkyYmYtMWJjODE5ODFkNGM1XC9kOTQ0NG85LTUyMWQwYjYzLWUxOWEtNGY0Zi04MDdlLTRmMTJhNzc1NDRiOS5wbmciLCJ3aWR0aCI6Ijw9MTAyNCJ9XV0sImF1ZCI6WyJ1cm46c2VydmljZTppbWFnZS5vcGVyYXRpb25zIl19.5GQcNvC_dhl2wqEuXjbRvj-05fI3MMRTs6vvzkdThJY")
-                        .build();
-
 
                 return event.reply()
                         .withEphemeral(false).withEmbeds(embed);
