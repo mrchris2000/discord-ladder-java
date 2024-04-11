@@ -5,7 +5,28 @@
     {
       "type": 1,
       "name": "join",
-      "description": "Join the tournament"
+      "description": "Join the tournament",
+      "options": [
+        {
+          "type": 3,
+          "name": "fafname",
+          "description": "Your faf username",
+          "required": true
+        }
+      ]
+    },
+    {
+      "type": 1,
+      "name": "update",
+      "description": "Update your FAF name",
+      "options": [
+        {
+          "type": 3,
+          "name": "fafname",
+          "description": "Your faf username",
+          "required": true
+        }
+      ]
     },
     {
       "type": 1,

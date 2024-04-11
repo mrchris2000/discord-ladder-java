@@ -248,24 +248,28 @@ public class TeamCommand implements SlashCommand {
                         rsMatchDetails.next();
                         String outcome = "";
                         dynamic.addField("Played", rsMatchDetails.getString("opposition_name"), true);
-                        dynamic.addField("On", rsMatchDetails.getString("formatted_match_date"), true);
                         if (!rsMatchDetails.getString("winner_name").equals(team_name)) {
                             outcome = "Loss";
                         } else {
                             outcome = "Win";
                         }
                         dynamic.addField("Result", outcome, true);
+                        //dynamic.addField("On", rsMatchDetails.getString("formatted_match_date"), true);
+                        dynamic.addField("ReplayID", "[" + Integer.toString(rsMatchDetails.getInt("match_id")) +"](https://replay.faforever.com/" +Integer.toString(rsMatchDetails.getInt("match_id"))+")", true);
+
                         while (rsMatchDetails.next()) {
                             dynamic.addField("\u200B", rsMatchDetails.getString("opposition_name"), true);
-                            dynamic.addField("\u200B", rsMatchDetails.getString("formatted_match_date"), true);
                             if (!rsMatchDetails.getString("winner_name").equals(team_name)) {
                                 outcome = "Loss";
                             } else {
                                 outcome = "Win";
                             }
-                            dynamic.addField("Result", outcome, true);
+                            dynamic.addField("\u200B", outcome, true);
+                            //dynamic.addField("\u200B", rsMatchDetails.getString("formatted_match_date"), true);
+                            dynamic.addField("\u200B", "[" + Integer.toString(rsMatchDetails.getInt("match_id")) +"](https://replay.faforever.com/" +Integer.toString(rsMatchDetails.getInt("match_id"))+")", true);
                         }
                     }
+
                     embed = dynamic.build();
 
                 } catch (Exception e) {

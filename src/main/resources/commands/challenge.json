@@ -12,7 +12,14 @@
           "name": "team_name",
           "description": "Which team was the victor?",
           "required": true,
-          "max_length": 100,
+          "autocomplete": true
+        },
+        {
+          "type": 3,
+          "name": "replay_id",
+          "description": "The short figure ID for the replay",
+          "required": true,
+          "max_length": 15,
           "min_length": 1
         }
       ]

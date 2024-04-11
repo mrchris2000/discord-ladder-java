@@ -90,6 +90,9 @@ public class PlayerCommand implements SlashCommand {
             st = connection.createStatement();
             if (event.getOption("join").isPresent()) {
                 ApplicationCommandInteractionOption type = event.getOption("join").get();
+                String faf_name = type.getOption("fafname").flatMap(ApplicationCommandInteractionOption::getValue)
+                        .map(ApplicationCommandInteractionOptionValue::asString)
+                        .get();
 
                 LOGGER.debug("Submitting user? : " + user.getUsername() + " :: " + user.getDisplayName());
 
@@ -108,13 +111,30 @@ public class PlayerCommand implements SlashCommand {
                 st = connection.prepareStatement("INSERT INTO players (player_name, discord_id, fafName, active) VALUES (?, ?, ?, ?) ON CONFLICT (player_name) DO UPDATE SET active=true;");
                 ((PreparedStatement) st).setString(1, user.getUsername());
                 ((PreparedStatement) st).setString(2, user.getId().asString());
-                ((PreparedStatement) st).setString(3, user.getDisplayName());
+                ((PreparedStatement) st).setString(3, faf_name);
                 ((PreparedStatement) st).setBoolean(4, true);
                 int row = ((PreparedStatement) st).executeUpdate();
 
 
                 return event.reply()
                         .withEphemeral(false).withContent("Hey, <@" + user.getId().asString() + "> you've joined the tournament");
+            } else if (event.getOption("update").isPresent()) {
+                ApplicationCommandInteractionOption type = event.getOption("update").get();
+                String faf_name = type.getOption("fafname").flatMap(ApplicationCommandInteractionOption::getValue)
+                        .map(ApplicationCommandInteractionOptionValue::asString)
+                        .get();
+
+                LOGGER.debug("Submitting user? : " + user.getUsername() + " :: " + user.getDisplayName() + " :: discord_id : "+ user.getId().asString());
+
+
+                //Update the users faf name in the database
+                st = connection.prepareStatement("UPDATE players SET fafName=? WHERE player_name=?");
+                ((PreparedStatement) st).setString(1, faf_name);
+                ((PreparedStatement) st).setString(2, user.getUsername());
+                int row = ((PreparedStatement) st).executeUpdate();
+
+                return event.reply()
+                        .withEphemeral(false).withContent("Thanks, <@" + user.getId().asString() + ">, your FAF name is now set to "+ faf_name);
             } else if (event.getOption("leave").isPresent()) {
                 ApplicationCommandInteractionOption type = event.getOption("leave").get();
 
