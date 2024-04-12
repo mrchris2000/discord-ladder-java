@@ -135,7 +135,9 @@ public class ChallengeCommand implements SlashCommand {
 
             if (event.getOption("confront").isPresent()) {
                 ApplicationCommandInteractionOption type = event.getOption("confront").get();
+
                 //Replace dummy team data with info from the backend.
+                //Need to get ladder data, current team location then one above is 'success' (green), two above is 'danger' (red)
                 EmbedCreateSpec embed = EmbedCreateSpec.builder()
                         .color(Color.of(255, 153, 0))
                         .title("Select your challenge:")
