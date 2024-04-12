@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import reactor.core.publisher.Mono;
 
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +26,8 @@ public class LadderCommand implements SlashCommand {
     public LadderCommand(Connection connection, AutoCompletes completes, Guild guild, Logger LOGGER) {
         this.connection = connection;
         this.completes = completes;
+        this.guild = guild;
+        this.LOGGER = LOGGER;
     }
 
     //Challenge 2 up at most
@@ -41,6 +44,10 @@ public class LadderCommand implements SlashCommand {
     private final Connection connection;
 
     private final AutoCompletes completes;
+
+    private final Guild guild;
+
+    private final Logger LOGGER;
 
     public Mono<Void> complete(ChatInputAutoCompleteEvent event) {
         List<ApplicationCommandOptionChoiceData> suggestions = new ArrayList<>();
@@ -79,38 +86,66 @@ public class LadderCommand implements SlashCommand {
         In this case, there is no fear it will return empty/null as this is marked "required: true" in our json.
          */
         Statement st = null;
+        ResultSet rs = null;
         try {
             st = connection.createStatement();
 
             //Replace dummy team data with info from the backend.
             EmbedCreateSpec embed = EmbedCreateSpec.builder()
                     .color(Color.of(255, 153, 0))
-                    .title("Select your challenge:")
-                    .author("Challenge options", "", "https://cdn.discordapp.com/avatars/1198703676987023450/8d7ab02c29bf51ac5f7c70615a2c3afb.png")
-                    .description("Alpha Team (<@508675578229162004> and <@1198703676987023450>) \nor\n Bravo Team (<@508675578229162004> and <@1198703676987023450>)")
-                    .addField("", "", false)
-                    .addField("Team", "", true)
-                    .addField("Total games played", "", true)
-                    .addField("Ladder position", "", true)
-                    .addField("", "Alpha Team", true)
-                    .addField("", "10", true)
-                    .addField("", "2", true)
-                    .addField("", "Bravo Team", true)
-                    .addField("", "8", true)
-                    .addField("", "3", true)
+                    .title("Our teams are currently:")
+                    .author("Current state of the leaderboard", "", "https://cdn.discordapp.com/avatars/1198703676987023450/8d7ab02c29bf51ac5f7c70615a2c3afb.png")
+
                     .image("https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/3db49b4c-f1c1-4bb6-85db-28aef1446bfb/d7xv7ks-55352abf-cd58-487f-ba38-7310f84bdf01.jpg?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7InBhdGgiOiJcL2ZcLzNkYjQ5YjRjLWYxYzEtNGJiNi04NWRiLTI4YWVmMTQ0NmJmYlwvZDd4djdrcy01NTM1MmFiZi1jZDU4LTQ4N2YtYmEzOC03MzEwZjg0YmRmMDEuanBnIn1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmZpbGUuZG93bmxvYWQiXX0.ojmjc2svRjM8ia-m5lZA7CU55VrLp-KMrRlcilW247I")
                     .build();
 
-            Button dangerButton = Button.danger("dangerButton-id", "Alpha Team");
-            Button successButton = Button.success("successButton-id", "Bravo Team");
+            st.executeQuery("SELECT\n" +
+                    "    t.team_name,\n" +
+                    "    l.rank AS ladder_position,\n" +
+                    "    COALESCE(m.total_matches, 0) AS matches_played\n" +
+                    "FROM\n" +
+                    "    teams t\n" +
+                    "JOIN\n" +
+                    "    ladder l ON t.team_id = l.team_id\n" +
+                    "LEFT JOIN\n" +
+                    "    (\n" +
+                    "        SELECT\n" +
+                    "            team_one_id AS team_id, COUNT(*) AS total_matches\n" +
+                    "        FROM\n" +
+                    "            matches\n" +
+                    "        WHERE\n" +
+                    "            replay_id != 0\n" +
+                    "        GROUP BY\n" +
+                    "            team_one_id\n" +
+                    "\n" +
+                    "        UNION ALL\n" +
+                    "\n" +
+                    "        SELECT\n" +
+                    "            team_two_id AS team_id, COUNT(*) AS total_matches\n" +
+                    "        FROM\n" +
+                    "            matches\n" +
+                    "        WHERE\n" +
+                    "            replay_id != 0\n" +
+                    "        GROUP BY\n" +
+                    "            team_two_id\n" +
+                    "    ) m ON t.team_id = m.team_id\n" +
+                    "GROUP BY\n" +
+                    "    t.team_name, l.rank, m.total_matches\n" +
+                    "ORDER BY\n" +
+                    "    l.rank ASC;");
+            rs = st.getResultSet();
+            EmbedCreateSpec.Builder dynamic = EmbedCreateSpec.builder().from(embed);
+            dynamic.addField("Team", "", true);
+            dynamic.addField("Total games played", "", true);
+            dynamic.addField("Ladder position", "", true);
+            while (rs.next()) {
+                dynamic.addField("", rs.getString("team_name"), true);
+                dynamic.addField("", rs.getString("matches_played"), true);
+                dynamic.addField("", rs.getString("ladder_position"), true);
+            }
+            embed = dynamic.build();
 
-
-            InteractionApplicationCommandCallbackSpec messageSpec = InteractionApplicationCommandCallbackSpec.builder()
-                    .addEmbed(embed)
-                    .addComponent(ActionRow.of(dangerButton, successButton))
-                    .build();
-
-            return event.reply(messageSpec);
+            return event.reply().withEmbeds(embed);
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
