@@ -21,13 +21,18 @@ import reactor.core.publisher.Flux;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 public class LadderBot {
     private static final Logger LOGGER = LoggerFactory.getLogger(LadderBot.class);
+
+    public static Map<String, String> envs = System.getenv();
+
+    public static String tournament_role = envs.get("ROLE");
+
+    public static String discord_token = envs.get("DISCORD_TOKEN");
+
+    public static String GUILD_NAME = envs.get("GUILD_NAME");
 
     public static void main(String[] args) throws Exception {
         //Creates the database client and connects to the database
@@ -38,7 +43,7 @@ public class LadderBot {
         Guild guild = null;
 
         //Creates the gateway client and connects to the gateway
-        final GatewayDiscordClient client = DiscordClientBuilder.create("MTE5ODcwMzY3Njk4NzAyMzQ1MA.G4Qh7M.sLXpAdfAMHmLggihWwXcsPplOfvn5W35F-aTkE").build()
+        final GatewayDiscordClient client = DiscordClientBuilder.create(LadderBot.discord_token).build()
                 .gateway()
                 .setEnabledIntents(IntentSet.of(Intent.GUILD_MEMBERS))
                 .login()
@@ -49,7 +54,7 @@ public class LadderBot {
         while (guilds.hasNext())
         {
             guild = guilds.next();
-            if(guild.getName().contains("MrChris's server")){
+            if(guild.getName().contains(LadderBot.GUILD_NAME)){
                 break;
             }
         }

@@ -55,7 +55,7 @@ public class AutoCompletes {
                     while(memberRoles.hasNext()){
                         Role memberRole = memberRoles.next();
                         LOGGER.debug("Member: " + member.getDisplayName() + " : Role: " + memberRole.getName() + " : RoleID:" + memberRole.getId());
-                        if ("2v2 Participant".equals(memberRole.getName())) {
+                        if (LadderBot.tournament_role.equals(memberRole.getName())) {
                             LOGGER.warn("Member has required role:"+  memberRole.getName() + ". Add to DB :)");
                             //addPlayerToDB(member);
                         }

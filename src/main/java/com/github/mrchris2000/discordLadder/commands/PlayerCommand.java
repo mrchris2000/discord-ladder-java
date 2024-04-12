@@ -1,5 +1,6 @@
 package com.github.mrchris2000.discordLadder.commands;
 
+import com.github.mrchris2000.discordLadder.LadderBot;
 import com.github.mrchris2000.discordLadder.infra.AutoCompletes;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
@@ -101,7 +102,7 @@ public class PlayerCommand implements SlashCommand {
                 while (serverRoles.hasNext()) {
                     Role serverRole = serverRoles.next();
                     LOGGER.debug("Looping roles");
-                    if(serverRole.getName().contains("2v2 Participant")){
+                    if(serverRole.getName().contains(LadderBot.tournament_role)){
                         LOGGER.debug("Found role");
                         user.addRole(serverRole.getId()).block();
                         LOGGER.debug("Added role");
@@ -145,7 +146,7 @@ public class PlayerCommand implements SlashCommand {
                 while (serverRoles.hasNext()) {
                     Role serverRole = serverRoles.next();
                     LOGGER.debug("Looping roles");
-                    if (serverRole.getName().contains("2v2 Participant")) {
+                    if (serverRole.getName().contains(LadderBot.tournament_role)) {
                         LOGGER.debug("Found role");
                         user.removeRole(serverRole.getId()).block();
                         LOGGER.debug("Added role");

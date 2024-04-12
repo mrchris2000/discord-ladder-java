@@ -1,5 +1,6 @@
 package com.github.mrchris2000.discordLadder.commands;
 
+import com.github.mrchris2000.discordLadder.LadderBot;
 import com.github.mrchris2000.discordLadder.infra.AutoCompletes;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
@@ -89,7 +90,7 @@ public class TeamCommand implements SlashCommand {
             Iterator<Role> userRoles = user.getRoles().toIterable().iterator();
             while (userRoles.hasNext()) {
                 Role current = userRoles.next();
-                if(current.getName().contains("2v2 Participant")){
+                if(current.getName().contains(LadderBot.tournament_role)){
                     mem = true;
                     break;
                 }

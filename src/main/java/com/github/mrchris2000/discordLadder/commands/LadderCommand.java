@@ -1,5 +1,6 @@
 package com.github.mrchris2000.discordLadder.commands;
 
+import com.github.mrchris2000.discordLadder.LadderBot;
 import com.github.mrchris2000.discordLadder.infra.AutoCompletes;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
