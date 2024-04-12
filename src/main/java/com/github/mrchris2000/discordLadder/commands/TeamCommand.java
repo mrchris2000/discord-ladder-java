@@ -102,17 +102,31 @@ public class TeamCommand implements SlashCommand {
             if (event.getOption("create").isPresent()) {
                 ApplicationCommandInteractionOption type = event.getOption("create").get();
 
-                String name = type.getOption("team_name").flatMap(ApplicationCommandInteractionOption::getValue)
+                String team_name = type.getOption("team_name").flatMap(ApplicationCommandInteractionOption::getValue)
                         .map(ApplicationCommandInteractionOptionValue::asString)
                         .get();
 
                 //ToDo: We don't want duplicates..
                 st = connection.prepareStatement("INSERT INTO teams (team_name) VALUES (?)");
-                ((PreparedStatement) st).setString(1, name);
+                ((PreparedStatement) st).setString(1, team_name);
                 int row = ((PreparedStatement) st).executeUpdate();
 
+                int team_id = 0;
+                PreparedStatement stTeamId = connection.prepareStatement("select team_id from teams where team_name like ?");
+                stTeamId.setString(1, team_name);
+                ResultSet rsTeamId = stTeamId.executeQuery();
+                if (rsTeamId.next()) { // Assuming there is at least one row in the result set
+                    team_id = rsTeamId.getInt(1);
+                }
+
+                st = connection.prepareStatement("INSERT INTO ladder (team_id, rank, points) VALUES (?,?,?)");
+                ((PreparedStatement) st).setInt(1, team_id);
+                ((PreparedStatement) st).setInt(2, 0);
+                ((PreparedStatement) st).setInt(3, 0);
+                int ladderrow = ((PreparedStatement) st).executeUpdate();
+
                 return event.reply()
-                        .withEphemeral(false).withContent("<@" + user.getId().asString() + "> added team: " + name);
+                        .withEphemeral(false).withContent("<@" + user.getId().asString() + "> added team: " + team_name);
             } else if (event.getOption("remove").isPresent()) {
                 ApplicationCommandInteractionOption type = event.getOption("remove").get();
                 String name = type.getOption("team_name").flatMap(ApplicationCommandInteractionOption::getValue)

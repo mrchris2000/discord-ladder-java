@@ -68,6 +68,7 @@ DECLARE
     win_rank INTEGER;
     lose_rank INTEGER;
     rank_difference INTEGER;
+    new_rank INTEGER;
 BEGIN
     -- Determine the winning and losing team IDs from the match results
     winning_team_id := NEW.winner;
@@ -86,11 +87,48 @@ BEGIN
 
     -- Execute rank update logic only if the rank difference is exactly 2
     IF rank_difference = 2 THEN
-        -- Move the winning team up by 2 places
-        UPDATE ladder SET rank = rank - 2 WHERE team_id = winning_team_id AND rank > 2;
+        -- Calculate new rank for the winning team
+        new_rank := win_rank + 2;
 
-        -- Optional: Adjust the ranks of other affected teams to maintain consistent ranking
-        -- This might involve shifting teams down, etc.
+        -- Shift down other teams
+        UPDATE ladder
+        SET rank = rank + 1
+        WHERE rank < win_rank AND rank >= new_rank;
+
+        -- Move the winning team up by 2 places
+        UPDATE ladder
+        SET rank = new_rank
+        WHERE team_id = winning_team_id;
+    END IF;
+
+    IF rank_difference = 1 THEN
+        -- Calculate new rank for the winning team
+        new_rank := win_rank + 1;
+
+        -- Shift down other teams
+        UPDATE ladder
+        SET rank = rank + 1
+        WHERE rank < win_rank AND rank >= new_rank;
+
+        -- Move the winning team up by 2 places
+        UPDATE ladder
+        SET rank = new_rank
+        WHERE team_id = winning_team_id;
+    END IF;
+
+    IF rank_difference = 0 THEN
+        -- Calculate new rank for the winning team
+        new_rank := win_rank + 1;
+
+        -- Shift down other teams
+        UPDATE ladder
+        SET rank = rank + 1
+        WHERE rank < win_rank AND rank >= new_rank;
+
+        -- Move the winning team up by 2 places
+        UPDATE ladder
+        SET rank = new_rank
+        WHERE team_id = winning_team_id;
     END IF;
 
     -- Return the NEW record from the trigger function
