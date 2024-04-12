@@ -119,9 +119,17 @@ public class TeamCommand implements SlashCommand {
                     team_id = rsTeamId.getInt(1);
                 }
 
+                int max_rank = 0;
+                PreparedStatement rankQuery = connection.prepareStatement("SELECT MAX(rank) AS highest_rank\n" +
+                        "FROM ladder ");
+                ResultSet currentMaxRank = rankQuery.executeQuery();
+                if (currentMaxRank.next()) { // Assuming there is at least one row in the result set
+                    max_rank = currentMaxRank.getInt(1);
+                }
+
                 st = connection.prepareStatement("INSERT INTO ladder (team_id, rank, points) VALUES (?,?,?)");
                 ((PreparedStatement) st).setInt(1, team_id);
-                ((PreparedStatement) st).setInt(2, 0);
+                ((PreparedStatement) st).setInt(2, max_rank+1);
                 ((PreparedStatement) st).setInt(3, 0);
                 int ladderrow = ((PreparedStatement) st).executeUpdate();
 
@@ -200,9 +208,10 @@ public class TeamCommand implements SlashCommand {
                     }
                     PreparedStatement stLadderPos = connection.prepareStatement("SELECT rank from ladder where team_id = ?");
                     stLadderPos.setInt(1, team_id);
+                    //LOGGER.debug("Match detail query: "+stLadderPos.toString());
                     ResultSet rsLadder = stLadderPos.executeQuery();
-                    if (rsMatches.next()) { // Assuming there is at least one row in the result set
-                        ladderPos = String.valueOf(rsMatches.getInt(1));
+                    if (rsLadder.next()) { // Assuming there is at least one row in the result set
+                        ladderPos = String.valueOf(rsLadder.getInt(1));
                     } else {
                         ladderPos = "Unranked";
                     }
@@ -232,7 +241,8 @@ public class TeamCommand implements SlashCommand {
                             "        END AS opposition_id,\n" +
                             "        TO_CHAR(m.match_date, 'DD-MM-YYYY HH24:MI') AS formatted_match_date,\n" +
                             "        t.team_name AS team_name,\n" +
-                            "        m.winner\n" +
+                            "        m.winner,\n" +
+                            "        m.replay_id\n" +
                             "    FROM\n" +
                             "        matches m\n" +
                             "    JOIN teams t ON t.team_id = m.team_one_id OR t.team_id = m.team_two_id\n" +
@@ -241,6 +251,7 @@ public class TeamCommand implements SlashCommand {
                             ")\n" +
                             "SELECT\n" +
                             "    tm.match_id,\n" +
+                            "    tm.replay_id,\n" +
                             "    tm.formatted_match_date,\n" +
                             "    tm.team_name,\n" +
                             "    opp.team_name AS opposition_name,\n" +
@@ -269,7 +280,7 @@ public class TeamCommand implements SlashCommand {
                         }
                         dynamic.addField("Result", outcome, true);
                         //dynamic.addField("On", rsMatchDetails.getString("formatted_match_date"), true);
-                        dynamic.addField("ReplayID", "[" + Integer.toString(rsMatchDetails.getInt("match_id")) +"](https://replay.faforever.com/" +Integer.toString(rsMatchDetails.getInt("match_id"))+")", true);
+                        dynamic.addField("ReplayID", "[" + Integer.toString(rsMatchDetails.getInt("replay_id")) +"](https://replay.faforever.com/" +Integer.toString(rsMatchDetails.getInt("match_id"))+")", true);
 
                         while (rsMatchDetails.next()) {
                             dynamic.addField("\u200B", rsMatchDetails.getString("opposition_name"), true);
@@ -280,7 +291,7 @@ public class TeamCommand implements SlashCommand {
                             }
                             dynamic.addField("\u200B", outcome, true);
                             //dynamic.addField("\u200B", rsMatchDetails.getString("formatted_match_date"), true);
-                            dynamic.addField("\u200B", "[" + Integer.toString(rsMatchDetails.getInt("match_id")) +"](https://replay.faforever.com/" +Integer.toString(rsMatchDetails.getInt("match_id"))+")", true);
+                            dynamic.addField("\u200B", "[" + Integer.toString(rsMatchDetails.getInt("replay_id")) +"](https://replay.faforever.com/" +Integer.toString(rsMatchDetails.getInt("match_id"))+")", true);
                         }
                     }
 

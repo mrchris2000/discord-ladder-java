@@ -45,6 +45,7 @@ CREATE TABLE teams (
 
 CREATE TABLE matches (
     match_id SERIAL PRIMARY KEY,
+    replay_id INTEGER DEFAULT 0,
     team_one_id INTEGER REFERENCES teams(team_id),
     team_two_id INTEGER REFERENCES teams(team_id),
     winner INTEGER REFERENCES teams(team_id),
@@ -59,87 +60,6 @@ CREATE TABLE ladder (
     points INTEGER,
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
-CREATE OR REPLACE FUNCTION update_ladder_rank()
-RETURNS TRIGGER AS $$
-DECLARE
-    winning_team_id INTEGER;
-    losing_team_id INTEGER;
-    win_rank INTEGER;
-    lose_rank INTEGER;
-    rank_difference INTEGER;
-    new_rank INTEGER;
-BEGIN
-    -- Determine the winning and losing team IDs from the match results
-    winning_team_id := NEW.winner;
-    IF NEW.team_one_id = winning_team_id THEN
-        losing_team_id := NEW.team_two_id;
-    ELSE
-        losing_team_id := NEW.team_one_id;
-    END IF;
-
-    -- Retrieve the current ranks for both the winning and losing teams from the ladder
-    SELECT rank INTO win_rank FROM ladder WHERE team_id = winning_team_id;
-    SELECT rank INTO lose_rank FROM ladder WHERE team_id = losing_team_id;
-
-    -- Calculate the difference in ranks between the losing and winning teams
-    rank_difference := lose_rank - win_rank;
-
-    -- Execute rank update logic only if the rank difference is exactly 2
-    IF rank_difference = 2 THEN
-        -- Calculate new rank for the winning team
-        new_rank := win_rank + 2;
-
-        -- Shift down other teams
-        UPDATE ladder
-        SET rank = rank + 1
-        WHERE rank < win_rank AND rank >= new_rank;
-
-        -- Move the winning team up by 2 places
-        UPDATE ladder
-        SET rank = new_rank
-        WHERE team_id = winning_team_id;
-    END IF;
-
-    IF rank_difference = 1 THEN
-        -- Calculate new rank for the winning team
-        new_rank := win_rank + 1;
-
-        -- Shift down other teams
-        UPDATE ladder
-        SET rank = rank + 1
-        WHERE rank < win_rank AND rank >= new_rank;
-
-        -- Move the winning team up by 2 places
-        UPDATE ladder
-        SET rank = new_rank
-        WHERE team_id = winning_team_id;
-    END IF;
-
-    IF rank_difference = 0 THEN
-        -- Calculate new rank for the winning team
-        new_rank := win_rank + 1;
-
-        -- Shift down other teams
-        UPDATE ladder
-        SET rank = rank + 1
-        WHERE rank < win_rank AND rank >= new_rank;
-
-        -- Move the winning team up by 2 places
-        UPDATE ladder
-        SET rank = new_rank
-        WHERE team_id = winning_team_id;
-    END IF;
-
-    -- Return the NEW record from the trigger function
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trigger_update_ladder_after_match
-AFTER INSERT OR UPDATE OF winner ON matches
-FOR EACH ROW
-EXECUTE FUNCTION update_ladder_rank();
 
 ALTER TABLE teams OWNER TO ladder;
 ALTER TABLE players OWNER TO ladder;
