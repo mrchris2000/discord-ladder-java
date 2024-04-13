@@ -1,0 +1,23 @@
+version: '3.1'
+
+services:
+  db:
+    container_name: discord-postgres
+    image: postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    volumes:
+      - /home/pi/mount:/var/lib/postgresql/data
+      - /home/pi/mount/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    environment:
+      POSTGRES_PASSWORD: pgLadder#!
+      PGDATA: /var/lib/postgresql/data/pgdata
+  app:
+    container_name: discord-bot
+    image: cog/bot:v1
+    restart: always
+    environment:
+      GUILD_NAME: MrChris's server
+      DISCORD_TOKEN: MTE5ODcwMzY3Njk4NzAyMzQ1MA.G4Qh7M.sLXpAdfAMHmLggihWwXcsPplOfvn5W35F-aTkE
+      ROLE: 2v2 tournament

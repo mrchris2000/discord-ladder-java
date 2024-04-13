@@ -11,6 +11,7 @@ import discord4j.core.object.entity.*;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.rest.util.Color;
+import org.slf4j.Logger;
 import reactor.core.publisher.Mono;
 
 import java.sql.Connection;
@@ -19,7 +20,6 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import org.slf4j.Logger;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -102,7 +102,7 @@ public class PlayerCommand implements SlashCommand {
                 while (serverRoles.hasNext()) {
                     Role serverRole = serverRoles.next();
                     LOGGER.debug("Looping roles");
-                    if(serverRole.getName().contains(LadderBot.tournament_role)){
+                    if (serverRole.getName().contains(LadderBot.tournament_role)) {
                         LOGGER.debug("Found role");
                         user.addRole(serverRole.getId()).block();
                         LOGGER.debug("Added role");
@@ -125,7 +125,7 @@ public class PlayerCommand implements SlashCommand {
                         .map(ApplicationCommandInteractionOptionValue::asString)
                         .get();
 
-                LOGGER.debug("Submitting user? : " + user.getUsername() + " :: " + user.getDisplayName() + " :: discord_id : "+ user.getId().asString());
+                LOGGER.debug("Submitting user? : " + user.getUsername() + " :: " + user.getDisplayName() + " :: discord_id : " + user.getId().asString());
 
 
                 //Update the users faf name in the database
@@ -135,11 +135,11 @@ public class PlayerCommand implements SlashCommand {
                 int row = ((PreparedStatement) st).executeUpdate();
 
                 return event.reply()
-                        .withEphemeral(false).withContent("Thanks, <@" + user.getId().asString() + ">, your FAF name is now set to "+ faf_name);
+                        .withEphemeral(false).withContent("Thanks, <@" + user.getId().asString() + ">, your FAF name is now set to " + faf_name);
             } else if (event.getOption("leave").isPresent()) {
                 ApplicationCommandInteractionOption type = event.getOption("leave").get();
 
-                LOGGER.debug("Submitting user? : " + user.getUsername() + " :: " + user.getDisplayName() + " :: discord_id : "+ user.getId().asString());
+                LOGGER.debug("Submitting user? : " + user.getUsername() + " :: " + user.getDisplayName() + " :: discord_id : " + user.getId().asString());
 
                 //Remove role
                 Iterator<Role> serverRoles = guild.getRoles().toIterable().iterator();
@@ -161,7 +161,7 @@ public class PlayerCommand implements SlashCommand {
                         .withEphemeral(false).withContent("Sad to see you go, <@" + user.getId().asString() + ">");
             }
         } catch (Exception e) {
-            if(e.getMessage().contains("duplicate")){
+            if (e.getMessage().contains("duplicate")) {
                 return event.reply()
                         .withEphemeral(false).withContent("Player is already a tournament member");
             }

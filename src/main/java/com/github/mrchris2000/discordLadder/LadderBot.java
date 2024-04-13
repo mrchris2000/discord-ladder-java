@@ -36,6 +36,9 @@ public class LadderBot {
 
     public static void main(String[] args) throws Exception {
         //Creates the database client and connects to the database
+        LOGGER.debug("Role: " + LadderBot.tournament_role);
+        LOGGER.debug("Token: " + LadderBot.discord_token);
+        LOGGER.debug("Guild: " + LadderBot.GUILD_NAME);
         final Properties props = new Properties();
         props.setProperty("user", "ladder");
         props.setProperty("password", "discPwd#!");
@@ -54,7 +57,7 @@ public class LadderBot {
         while (guilds.hasNext())
         {
             guild = guilds.next();
-            if(guild.getName().contains(LadderBot.GUILD_NAME)){
+            if (guild.getName().contains(LadderBot.GUILD_NAME)) {
                 break;
             }
         }

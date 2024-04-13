@@ -91,52 +91,52 @@ public class ChallengeCommand implements SlashCommand {
             Button button = (Button) butt.next();
             if (button.getCustomId().get().contains(event.getCustomId())) {
                 challenged_team = button.getLabel().get();
-                if(button.getStyle().getValue() == 4){
+                if (button.getStyle().getValue() == 4) {
                     clicked = Button.danger(button.getCustomId().get(), "Match set with: " + button.getLabel().get()).disabled();
-                }else{
+                } else {
                     clicked = Button.success(button.getCustomId().get(), "Match set with: " + button.getLabel().get()).disabled();
                 }
             }
         }
 
-        int challenged_team_id=0;
-        try{
-        PreparedStatement stTeamId = connection.prepareStatement("select team_id from teams where team_name like ?");
-        stTeamId.setString(1, challenged_team);
-        ResultSet rsTeamId = stTeamId.executeQuery();
-        if (rsTeamId.next()) { // Assuming there is at least one row in the result set
-            challenged_team_id = rsTeamId.getInt(1);
-        }
-        String team_name = "";
-        int player_id = 0;
-        int player_team_id = 0;
+        int challenged_team_id = 0;
         try {
-            PreparedStatement userQuery = connection.prepareStatement("select * from players where player_name like '" + user.getUsername() + "'");
-
-            ResultSet rs = userQuery.executeQuery();;
-            while (rs.next()) {
-                player_id = rs.getInt("player_id");
-                team_name = rs.getString("current_team");
+            PreparedStatement stTeamId = connection.prepareStatement("select team_id from teams where team_name like ?");
+            stTeamId.setString(1, challenged_team);
+            ResultSet rsTeamId = stTeamId.executeQuery();
+            if (rsTeamId.next()) { // Assuming there is at least one row in the result set
+                challenged_team_id = rsTeamId.getInt(1);
             }
+            String team_name = "";
+            int player_id = 0;
+            int player_team_id = 0;
+            try {
+                PreparedStatement userQuery = connection.prepareStatement("select * from players where player_name like '" + user.getUsername() + "'");
+
+                ResultSet rs = userQuery.executeQuery();
+                ;
+                while (rs.next()) {
+                    player_id = rs.getInt("player_id");
+                    team_name = rs.getString("current_team");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            "".equals(team_name);
+
+            PreparedStatement player_team = connection.prepareStatement("select team_id from teams where team_name like ?");
+            player_team.setString(1, team_name);
+            ResultSet playerTeamResult = player_team.executeQuery();
+            if (playerTeamResult.next()) { // Assuming there is at least one row in the result set
+                player_team_id = playerTeamResult.getInt(1);
+            }
+
+            PreparedStatement stMatchesCount = connection.prepareStatement("insert into matches (team_one_id, team_two_id) values (?,?)");
+            stMatchesCount.setInt(1, challenged_team_id);
+            stMatchesCount.setInt(2, player_team_id);
+
+            int row = stMatchesCount.executeUpdate();
         } catch (Exception e) {
-            e.printStackTrace();
-        }
-        if(team_name.equals("")){
-        }
-
-        PreparedStatement player_team = connection.prepareStatement("select team_id from teams where team_name like ?");
-        player_team.setString(1, team_name);
-        ResultSet playerTeamResult = player_team.executeQuery();
-        if (playerTeamResult.next()) { // Assuming there is at least one row in the result set
-            player_team_id = playerTeamResult.getInt(1);
-        }
-
-        PreparedStatement stMatchesCount = connection.prepareStatement("insert into matches (team_one_id, team_two_id) values (?,?)");
-        stMatchesCount.setInt(1, challenged_team_id);
-        stMatchesCount.setInt(2, player_team_id);
-
-        int row = stMatchesCount.executeUpdate();
-        }catch (Exception e){
             e.printStackTrace();
         }
         Mono<Message> edit = event.editReply()
@@ -165,12 +165,12 @@ public class ChallengeCommand implements SlashCommand {
             Iterator<Role> userRoles = user.getRoles().toIterable().iterator();
             while (userRoles.hasNext()) {
                 Role current = userRoles.next();
-                if(current.getName().contains(LadderBot.tournament_role)){
+                if (current.getName().contains(LadderBot.tournament_role)) {
                     mem = true;
                     break;
                 }
             }
-            if(!mem){
+            if (!mem) {
                 return event.reply()
                         .withEphemeral(false).withContent("Sorry <@" + user.getId().asString() + "> you must be a tournament member to do this");
             }
@@ -193,7 +193,7 @@ public class ChallengeCommand implements SlashCommand {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                if(team_name.equals("")){
+                if ("".equals(team_name)) {
                     return event.reply()
                             .withEphemeral(false).withContent("<@" + user.getId().asString() + ">, you can't challenge because you're not in a team!");
                 }
@@ -220,11 +220,11 @@ public class ChallengeCommand implements SlashCommand {
                 //ORDER BY rank ASC
                 //LIMIT 2;
 
-                PreparedStatement ranks = connection.prepareStatement("SELECT team_id, rank\n" +
-                        "                FROM ladder\n" +
-                        "                WHERE rank < (SELECT rank FROM ladder WHERE team_id = ?)\n" +
-                        "                ORDER BY rank DESC\n" +
-                        "                LIMIT 2");
+                PreparedStatement ranks = connection.prepareStatement("SELECT team_id, rank\n"
+                        + "                FROM ladder\n"
+                        + "                WHERE rank < (SELECT rank FROM ladder WHERE team_id = ?)\n"
+                        + "                ORDER BY rank DESC\n"
+                        + "                LIMIT 2");
                 ranks.setInt(1, team_id);
                 LOGGER.debug("Rank query: " + ranks.toString());
                 ResultSet ranksResult = ranks.executeQuery();
@@ -234,7 +234,7 @@ public class ChallengeCommand implements SlashCommand {
                 int hardest = 0;
                 String hardest_name = "";
                 int hardest_rank = 0;
-                if(ranksResult.next()) {
+                if (ranksResult.next()) {
                     hardest = ranksResult.getInt(1);
                     hardest_rank = ranksResult.getInt(2);
                     PreparedStatement hardestQuery = connection.prepareStatement("select team_name from teams where team_id=?");
@@ -248,7 +248,7 @@ public class ChallengeCommand implements SlashCommand {
                 int easiest = 0;
                 String easiest_name = "";
                 int easiest_rank = 0;
-                if(ranksResult.next()) {
+                if (ranksResult.next()) {
                     easiest = ranksResult.getInt(1);
                     easiest_rank = ranksResult.getInt(2);
                     PreparedStatement easiestQuery = connection.prepareStatement("select team_name from teams where team_id=?");
@@ -260,7 +260,7 @@ public class ChallengeCommand implements SlashCommand {
                 }
                 //I feel dirty for what I have just done.
 
-                if(hardest == 0 && easiest == 0){
+                if (hardest == 0 && easiest == 0) {
                     return event.reply()
                             .withEphemeral(false).withContent("Hey  <@" + user.getId().asString() + ">, your team is the top of the ladder! Nobody to challenge :(");
                 }
@@ -270,7 +270,7 @@ public class ChallengeCommand implements SlashCommand {
                         .color(Color.of(255, 153, 0))
                         .title("Select your challenge:")
                         .author("Challenge options", "", "https://cdn.discordapp.com/avatars/1198703676987023450/8d7ab02c29bf51ac5f7c70615a2c3afb.png")
-                        .description(hardest_name +" (<@508675578229162004> and <@1198703676987023450>) \nor\n" + easiest_name + " (<@508675578229162004> and <@1198703676987023450>)")
+                        .description(hardest_name + " (<@508675578229162004> and <@1198703676987023450>) \nor\n" + easiest_name + " (<@508675578229162004> and <@1198703676987023450>)")
                         .image("https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/3db49b4c-f1c1-4bb6-85db-28aef1446bfb/d7xv7ks-55352abf-cd58-487f-ba38-7310f84bdf01.jpg?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7InBhdGgiOiJcL2ZcLzNkYjQ5YjRjLWYxYzEtNGJiNi04NWRiLTI4YWVmMTQ0NmJmYlwvZDd4djdrcy01NTM1MmFiZi1jZDU4LTQ4N2YtYmEzOC03MzEwZjg0YmRmMDEuanBnIn1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmZpbGUuZG93bmxvYWQiXX0.ojmjc2svRjM8ia-m5lZA7CU55VrLp-KMrRlcilW247I")
                         .build();
 
@@ -285,19 +285,19 @@ public class ChallengeCommand implements SlashCommand {
                 Button successButton = null;
                 Button dangerButton = Button.danger("challenge-dangerButton-id" + UUID.randomUUID(), hardest_name);
                 InteractionApplicationCommandCallbackSpec messageSpec = null;
-                if(easiest != 0){
+                if (easiest != 0) {
                     successButton = Button.success("challenge-successButton-id" + UUID.randomUUID(), easiest_name);
                     dynamic.addField("", easiest_name, true);
                     dynamic.addField("", "8", true);
                     dynamic.addField("", Integer.toString(easiest_rank), true);
                 }
                 embed = dynamic.build();
-                if(easiest !=0 ){
+                if (easiest != 0) {
                     messageSpec = InteractionApplicationCommandCallbackSpec.builder()
                             .addEmbed(embed)
                             .addComponent(ActionRow.of(dangerButton, successButton))
                             .build();
-                }else{
+                } else {
                     messageSpec = InteractionApplicationCommandCallbackSpec.builder()
                             .addEmbed(embed)
                             .addComponent(ActionRow.of(dangerButton))
@@ -329,7 +329,7 @@ public class ChallengeCommand implements SlashCommand {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                if(player_team_name.equals("")){
+                if ("".equals(player_team_name)) {
                     return event.reply()
                             .withEphemeral(false).withContent("<@" + user.getId().asString() + ">, you can't challenge because you're not in a team!");
                 }
@@ -351,18 +351,18 @@ public class ChallengeCommand implements SlashCommand {
 
                 int opponent_team_id = 0;
                 //Need the opponent team id - replay_id = 0 and one of the teams has this id.
-                PreparedStatement opponentQuery = connection.prepareStatement("SELECT \n" +
-                        "    match_id,\n" +
-                        "    CASE \n" +
-                        "        WHEN team_one_id = ? THEN team_two_id\n" +
-                        "        ELSE team_one_id\n" +
-                        "    END AS opponent_team_id,\n" +
-                        "    match_date\n" +
-                        "FROM \n" +
-                        "    matches\n" +
-                        "WHERE \n" +
-                        "    (team_one_id = ? OR team_two_id = ?)\n" +
-                        "    AND replay_id = 0;\n");
+                PreparedStatement opponentQuery = connection.prepareStatement("SELECT \n"
+                        + "    match_id,\n"
+                        + "    CASE \n"
+                        + "        WHEN team_one_id = ? THEN team_two_id\n"
+                        + "        ELSE team_one_id\n"
+                        + "    END AS opponent_team_id,\n"
+                        + "    match_date\n"
+                        + "FROM \n"
+                        + "    matches\n"
+                        + "WHERE \n"
+                        + "    (team_one_id = ? OR team_two_id = ?)\n"
+                        + "    AND replay_id = 0;\n");
                 opponentQuery.setInt(1, team_id);
                 opponentQuery.setInt(2, team_id);
                 opponentQuery.setInt(3, team_id);
@@ -379,7 +379,7 @@ public class ChallengeCommand implements SlashCommand {
                 stMatchesCount.setInt(4, team_id);
                 System.out.println("Match update" + stMatchesCount.toString());
                 int row = stMatchesCount.executeUpdate();
-                if(player_team_id != team_id){
+                if (player_team_id != team_id) {
                     LOGGER.debug("Bailing because player team lost, so there are no changes to make");
                     return event.reply()
                             .withEphemeral(false).withContent("<@" + user.getId().asString() + ">, sorry for your loss!");
@@ -413,7 +413,6 @@ public class ChallengeCommand implements SlashCommand {
                 ladderSwitch2.setInt(2, opponent_team_id);
                 LOGGER.debug(ladderSwitch2.toString());
                 int ladRow2 = ladderSwitch2.executeUpdate();
-
 
 
                 return event.reply()

@@ -90,12 +90,12 @@ public class TeamCommand implements SlashCommand {
             Iterator<Role> userRoles = user.getRoles().toIterable().iterator();
             while (userRoles.hasNext()) {
                 Role current = userRoles.next();
-                if(current.getName().contains(LadderBot.tournament_role)){
+                if (current.getName().contains(LadderBot.tournament_role)) {
                     mem = true;
                     break;
                 }
             }
-            if(!mem){
+            if (!mem) {
                 return event.reply()
                         .withEphemeral(false).withContent("Sorry <@" + user.getId().asString() + "> you must be a tournament member to do this");
             }
@@ -121,8 +121,8 @@ public class TeamCommand implements SlashCommand {
                 }
 
                 int max_rank = 0;
-                PreparedStatement rankQuery = connection.prepareStatement("SELECT MAX(rank) AS highest_rank\n" +
-                        "FROM ladder ");
+                PreparedStatement rankQuery = connection.prepareStatement("SELECT MAX(rank) AS highest_rank\n"
+                        + "FROM ladder ");
                 ResultSet currentMaxRank = rankQuery.executeQuery();
                 if (currentMaxRank.next()) { // Assuming there is at least one row in the result set
                     max_rank = currentMaxRank.getInt(1);
@@ -130,7 +130,7 @@ public class TeamCommand implements SlashCommand {
 
                 st = connection.prepareStatement("INSERT INTO ladder (team_id, rank, points) VALUES (?,?,?)");
                 ((PreparedStatement) st).setInt(1, team_id);
-                ((PreparedStatement) st).setInt(2, max_rank+1);
+                ((PreparedStatement) st).setInt(2, max_rank + 1);
                 ((PreparedStatement) st).setInt(3, 0);
                 int ladderrow = ((PreparedStatement) st).executeUpdate();
 
@@ -163,7 +163,7 @@ public class TeamCommand implements SlashCommand {
 
                 return event.reply()
                         .withEphemeral(false).withContent(output);
-            }  else if (event.getOption("stats").isPresent()) {
+            } else if (event.getOption("stats").isPresent()) {
                 ApplicationCommandInteractionOption type = event.getOption("stats").get();
 
                 String team_name = type.getOption("team").flatMap(ApplicationCommandInteractionOption::getValue)
@@ -175,7 +175,7 @@ public class TeamCommand implements SlashCommand {
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy MM dd");
                 String text = date.format(formatter);
                 LocalDate parsedDate = LocalDate.parse(text, formatter);
-                String[] playerIDs = {"Missing team mate :(","Missing team mate :("};
+                String[] playerIDs = {"Missing team mate :(", "Missing team mate :("};
                 String ladderPos = "\u200B";
                 int team_id = 0;
                 String matches = "";
@@ -197,7 +197,7 @@ public class TeamCommand implements SlashCommand {
                         i++;
                     }
 
-                    LOGGER.debug("Team ID: "+team_id);
+                    LOGGER.debug("Team ID: " + team_id);
                     PreparedStatement stMatchesCount = connection.prepareStatement("SELECT COUNT(*) from matches where team_one_id = ? OR team_two_id = ?");
                     stMatchesCount.setInt(1, team_id);
                     stMatchesCount.setInt(2, team_id);
@@ -223,7 +223,7 @@ public class TeamCommand implements SlashCommand {
                             .title(team_name)
                             .url("https://discord4j.com")
                             .author("Team stats", "https://discord4j.com", "https://cdn.discordapp.com/avatars/1198703676987023450/8d7ab02c29bf51ac5f7c70615a2c3afb.png")
-                            .description( playerIDs[0] + " and " + playerIDs[1] + "")
+                            .description(playerIDs[0] + " and " + playerIDs[1] + "")
                             .thumbnail("https://cdn.discordapp.com/avatars/1198703676987023450/8d7ab02c29bf51ac5f7c70615a2c3afb.png?size=256")
                             .addField("Total games played", matches, true)
                             .addField("Ladder position", ladderPos, true)
@@ -233,41 +233,41 @@ public class TeamCommand implements SlashCommand {
 
 
                     EmbedCreateSpec.Builder dynamic = EmbedCreateSpec.builder().from(embed);
-                    PreparedStatement matchDetails = connection.prepareStatement("WITH TeamMatches AS (\n" +
-                            "    SELECT\n" +
-                            "        m.match_id,\n" +
-                            "        CASE\n" +
-                            "            WHEN t.team_id = m.team_one_id THEN m.team_two_id\n" +
-                            "            ELSE m.team_one_id\n" +
-                            "        END AS opposition_id,\n" +
-                            "        TO_CHAR(m.match_date, 'DD-MM-YYYY HH24:MI') AS formatted_match_date,\n" +
-                            "        t.team_name AS team_name,\n" +
-                            "        m.winner,\n" +
-                            "        m.replay_id\n" +
-                            "    FROM\n" +
-                            "        matches m\n" +
-                            "    JOIN teams t ON t.team_id = m.team_one_id OR t.team_id = m.team_two_id\n" +
-                            "    WHERE\n" +
-                            "        t.team_name = ?\n" +
-                            ")\n" +
-                            "SELECT\n" +
-                            "    tm.match_id,\n" +
-                            "    tm.replay_id,\n" +
-                            "    tm.formatted_match_date,\n" +
-                            "    tm.team_name,\n" +
-                            "    opp.team_name AS opposition_name,\n" +
-                            "    win.team_name AS winner_name\n" +
-                            "FROM\n" +
-                            "    TeamMatches tm\n" +
-                            "JOIN teams opp ON tm.opposition_id = opp.team_id\n" +
-                            "JOIN teams win ON tm.winner = win.team_id\n" +
-                            "ORDER BY\n" +
-                            "    tm.formatted_match_date DESC\n" +
-                            "LIMIT 5");
+                    PreparedStatement matchDetails = connection.prepareStatement("WITH TeamMatches AS (\n"
+                            + "    SELECT\n"
+                            + "        m.match_id,\n"
+                            + "        CASE\n"
+                            + "            WHEN t.team_id = m.team_one_id THEN m.team_two_id\n"
+                            + "            ELSE m.team_one_id\n"
+                            + "        END AS opposition_id,\n"
+                            + "        TO_CHAR(m.match_date, 'DD-MM-YYYY HH24:MI') AS formatted_match_date,\n"
+                            + "        t.team_name AS team_name,\n"
+                            + "        m.winner,\n"
+                            + "        m.replay_id\n"
+                            + "    FROM\n"
+                            + "        matches m\n"
+                            + "    JOIN teams t ON t.team_id = m.team_one_id OR t.team_id = m.team_two_id\n"
+                            + "    WHERE\n"
+                            + "        t.team_name = ?\n"
+                            + ")\n"
+                            + "SELECT\n"
+                            + "    tm.match_id,\n"
+                            + "    tm.replay_id,\n"
+                            + "    tm.formatted_match_date,\n"
+                            + "    tm.team_name,\n"
+                            + "    opp.team_name AS opposition_name,\n"
+                            + "    win.team_name AS winner_name\n"
+                            + "FROM\n"
+                            + "    TeamMatches tm\n"
+                            + "JOIN teams opp ON tm.opposition_id = opp.team_id\n"
+                            + "JOIN teams win ON tm.winner = win.team_id\n"
+                            + "ORDER BY\n"
+                            + "    tm.formatted_match_date DESC\n"
+                            + "LIMIT 5");
                     matchDetails.setString(1, team_name);
 
                     ResultSet rsMatchDetails = matchDetails.executeQuery();
-                    if(!matches.equals("0")) {
+                    if (!"0".equals(matches)) {
                         LOGGER.debug("Rows: " + matches);
                         String opposition = "";
 
@@ -281,7 +281,7 @@ public class TeamCommand implements SlashCommand {
                         }
                         dynamic.addField("Result", outcome, true);
                         //dynamic.addField("On", rsMatchDetails.getString("formatted_match_date"), true);
-                        dynamic.addField("ReplayID", "[" + Integer.toString(rsMatchDetails.getInt("replay_id")) +"](https://replay.faforever.com/" +Integer.toString(rsMatchDetails.getInt("match_id"))+")", true);
+                        dynamic.addField("ReplayID", "[" + Integer.toString(rsMatchDetails.getInt("replay_id")) + "](https://replay.faforever.com/" + Integer.toString(rsMatchDetails.getInt("match_id")) + ")", true);
 
                         while (rsMatchDetails.next()) {
                             dynamic.addField("\u200B", rsMatchDetails.getString("opposition_name"), true);
@@ -292,7 +292,7 @@ public class TeamCommand implements SlashCommand {
                             }
                             dynamic.addField("\u200B", outcome, true);
                             //dynamic.addField("\u200B", rsMatchDetails.getString("formatted_match_date"), true);
-                            dynamic.addField("\u200B", "[" + Integer.toString(rsMatchDetails.getInt("replay_id")) +"](https://replay.faforever.com/" +Integer.toString(rsMatchDetails.getInt("match_id"))+")", true);
+                            dynamic.addField("\u200B", "[" + Integer.toString(rsMatchDetails.getInt("replay_id")) + "](https://replay.faforever.com/" + Integer.toString(rsMatchDetails.getInt("match_id")) + ")", true);
                         }
                     }
 
@@ -325,25 +325,25 @@ public class TeamCommand implements SlashCommand {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                if(current_team == null){
+                if (current_team == null) {
                     current_team = "";
                 }
 
                 //Should probably have a team class... can't be arsed, do that later.
-                int player1_id=0;
-                int player2_id=0;
+                int player1_id = 0;
+                int player2_id = 0;
                 String playerNumber = "one";
                 //Get existing team details
                 try {
-                    st.executeQuery("select * from teams where team_name='"+team_name+"'");
+                    st.executeQuery("select * from teams where team_name='" + team_name + "'");
                     rs = st.getResultSet();
                     while (rs.next()) {
                         player1_id = rs.getInt("player_one_id");
-                        if(player1_id != 0){
+                        if (player1_id != 0) {
                             playerNumber = "two";
                         }
                         player2_id = rs.getInt("player_two_id");
-                        if(player2_id != 0 ){
+                        if (player2_id != 0) {
                             playerNumber = "full";
                         }
                     }
@@ -351,18 +351,18 @@ public class TeamCommand implements SlashCommand {
                     e.printStackTrace();
                 }
                 //Is team full
-                if(playerNumber.equals("full")){
+                if ("full".equals(playerNumber)) {
                     return event.reply()
-                            .withEphemeral(false).withContent("Sorry <@" + user.getId().asString() + "> team "+ team_name +" is currently full.");
+                            .withEphemeral(false).withContent("Sorry <@" + user.getId().asString() + "> team " + team_name + " is currently full.");
                 }
                 //Player is already on the team?
-                if(player1_id == player_id){
+                if (player1_id == player_id) {
                     return event.reply()
                             .withEphemeral(false).withContent("Hey  <@" + user.getId().asString() + ">, you're already a member of' " + team_name);
-                } else if(player2_id == player_id){
+                } else if (player2_id == player_id) {
                     return event.reply()
                             .withEphemeral(false).withContent("Hey  <@" + user.getId().asString() + ">, you're already a member of' " + team_name);
-                } else if(!current_team.equals("")){
+                } else if (!"".equals(current_team)) {
                     return event.reply()
                             .withEphemeral(false).withContent("Hey  <@" + user.getId().asString() + ">, you're already a member of' " + current_team);
                 }
@@ -401,32 +401,32 @@ public class TeamCommand implements SlashCommand {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                if(current_team == null){
+                if (current_team == null) {
                     current_team = "";
-                } else if(!current_team.equals(team_name)){
+                } else if (!current_team.equals(team_name)) {
                     return event.reply()
                             .withEphemeral(false).withContent("<@" + user.getId().asString() + ">, you can't leave a team you're not a member of!");
                 }
 
                 //Should probably have a team class... can't be arsed, do that later.
-                int player1_id=0;
-                int player2_id=0;
+                int player1_id = 0;
+                int player2_id = 0;
                 String playerNumber = "one";
                 //Get existing team details
                 try {
-                    st.executeQuery("select * from teams where team_name='"+team_name+"'");
+                    st.executeQuery("select * from teams where team_name='" + team_name + "'");
                     rs = st.getResultSet();
                     while (rs.next()) {
                         player1_id = rs.getInt("player_one_id");
-                        if(player1_id == player_id){
-                            st.executeUpdate("UPDATE teams SET player_one_id=null where player_one_id='"+player_id+"'");
-                            st.executeUpdate("UPDATE players SET current_team=null where player_id='"+player_id+"'");
+                        if (player1_id == player_id) {
+                            st.executeUpdate("UPDATE teams SET player_one_id=null where player_one_id='" + player_id + "'");
+                            st.executeUpdate("UPDATE players SET current_team=null where player_id='" + player_id + "'");
                             break;
                         }
                         player2_id = rs.getInt("player_two_id");
-                        if(player2_id == player_id ){
-                            st.executeUpdate("UPDATE teams SET player_two_id=null where player_two_id='"+player_id+"'");
-                            st.executeUpdate("UPDATE players SET current_team=null where player_id='"+player_id+"'");
+                        if (player2_id == player_id) {
+                            st.executeUpdate("UPDATE teams SET player_two_id=null where player_two_id='" + player_id + "'");
+                            st.executeUpdate("UPDATE players SET current_team=null where player_id='" + player_id + "'");
                             break;
                         }
                     }
