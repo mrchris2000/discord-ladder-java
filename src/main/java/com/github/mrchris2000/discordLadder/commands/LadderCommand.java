@@ -67,7 +67,7 @@ public class LadderCommand implements SlashCommand {
                 if ("team_name".equals(option)) {
                     return event.respondWithSuggestions(completes.getTeamNames());
                 } else {
-                   // return event.respondWithSuggestions(completes.getPlayerNames());
+                    // return event.respondWithSuggestions(completes.getPlayerNames());
                 }
             }
         }

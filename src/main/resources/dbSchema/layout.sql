@@ -64,7 +64,7 @@ CREATE TABLE ladder (
     rank INTEGER,
     points INTEGER,
     logo TEXT,
-    active BOOLEAN TRUE,
+    active BOOLEAN DEFAULT TRUE,
     other TEXT,
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
