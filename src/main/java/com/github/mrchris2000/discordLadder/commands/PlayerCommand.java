@@ -2,6 +2,7 @@ package com.github.mrchris2000.discordLadder.commands;
 
 import com.github.mrchris2000.discordLadder.LadderBot;
 import com.github.mrchris2000.discordLadder.infra.AutoCompletes;
+import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
@@ -30,6 +31,15 @@ public class PlayerCommand implements SlashCommand {
         this.completes = completes;
         this.guild = guild;
         this.LOGGER = LOGGER;
+
+        //Determine role
+        Iterator<Role> serverRoles = guild.getRoles().toIterable().iterator();
+        while (serverRoles.hasNext()) {
+            Role serverRole = serverRoles.next();
+            if (serverRole.getName().contains(LadderBot.tournament_role)) {
+                role_id = serverRole.getId();
+            }
+        }
     }
 
     @Override
@@ -44,6 +54,8 @@ public class PlayerCommand implements SlashCommand {
     private final AutoCompletes completes;
 
     private final Logger LOGGER;
+
+    private Snowflake role_id;
 
     public Mono<Void> complete(ChatInputAutoCompleteEvent event) {
         Statement st = null;
@@ -98,16 +110,8 @@ public class PlayerCommand implements SlashCommand {
                 LOGGER.debug("Submitting user? : " + user.getUsername() + " :: " + user.getDisplayName());
 
                 //Assign role
-                Iterator<Role> serverRoles = guild.getRoles().toIterable().iterator();
-                while (serverRoles.hasNext()) {
-                    Role serverRole = serverRoles.next();
-                    LOGGER.debug("Looping roles");
-                    if (serverRole.getName().contains(LadderBot.tournament_role)) {
-                        LOGGER.debug("Found role");
-                        user.addRole(serverRole.getId()).block();
-                        LOGGER.debug("Added role");
-                    }
-                }
+                user.addRole(role_id).block();
+
                 //Add user to the database
                 st = connection.prepareStatement("INSERT INTO players (player_name, discord_id, fafName, active) VALUES (?, ?, ?, ?) ON CONFLICT (player_name) DO UPDATE SET active=true;");
                 ((PreparedStatement) st).setString(1, user.getUsername());
@@ -142,17 +146,9 @@ public class PlayerCommand implements SlashCommand {
                 LOGGER.debug("Submitting user? : " + user.getUsername() + " :: " + user.getDisplayName() + " :: discord_id : " + user.getId().asString());
 
                 //Remove role
-                Iterator<Role> serverRoles = guild.getRoles().toIterable().iterator();
-                while (serverRoles.hasNext()) {
-                    Role serverRole = serverRoles.next();
-                    LOGGER.debug("Looping roles");
-                    if (serverRole.getName().contains(LadderBot.tournament_role)) {
-                        LOGGER.debug("Found role");
-                        user.removeRole(serverRole.getId()).block();
-                        LOGGER.debug("Added role");
-                    }
-                }
-                //Add user to the database
+                user.removeRole(role_id).block();
+
+                //Update user to the database
                 st = connection.prepareStatement("UPDATE players SET active=FALSE WHERE player_name=?");
                 ((PreparedStatement) st).setString(1, user.getUsername());
                 int row = ((PreparedStatement) st).executeUpdate();
