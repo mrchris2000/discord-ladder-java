@@ -33,11 +33,6 @@
     },
     {
       "type": 1,
-      "name": "list",
-      "description": "Lists all teams"
-    },
-    {
-      "type": 1,
       "name": "stats",
       "description": "Get team stats",
       "options": [

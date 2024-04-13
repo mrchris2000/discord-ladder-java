@@ -30,6 +30,7 @@ CREATE TABLE players (
     active BOOLEAN DEFAULT FALSE,
     fafName VARCHAR(100) UNIQUE,
     current_team TEXT,
+    logo TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -39,6 +40,9 @@ CREATE TABLE teams (
     player_two_id INTEGER REFERENCES players(player_id),
     team_name VARCHAR(100),
     team_description TEXT,
+    logo TEXT,
+    other TEXT,
+    active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (player_one_id, player_two_id)
 );
@@ -50,6 +54,7 @@ CREATE TABLE matches (
     team_two_id INTEGER REFERENCES teams(team_id),
     winner INTEGER REFERENCES teams(team_id),
     match_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    other TEXT,
     UNIQUE (team_one_id, team_two_id, match_date)
 );
 
@@ -58,6 +63,9 @@ CREATE TABLE ladder (
     team_id INTEGER REFERENCES teams(team_id),
     rank INTEGER,
     points INTEGER,
+    logo TEXT,
+    active BOOLEAN TRUE,
+    other TEXT,
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

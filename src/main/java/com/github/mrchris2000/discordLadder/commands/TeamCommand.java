@@ -151,18 +151,6 @@ public class TeamCommand implements SlashCommand {
 
                 return event.reply()
                         .withEphemeral(false).withContent("<@" + user.getId().asString() + "> removed team: " + name);
-            } else if (event.getOption("list").isPresent()) {
-
-                st.executeQuery("select team_name from teams");
-                rs = st.getResultSet();
-                String output = "Current teams:\n";
-                while (rs.next()) {
-                    output = output.concat(rs.getString("team_name") + "\n");
-                }
-
-
-                return event.reply()
-                        .withEphemeral(false).withContent(output);
             } else if (event.getOption("stats").isPresent()) {
                 ApplicationCommandInteractionOption type = event.getOption("stats").get();
 

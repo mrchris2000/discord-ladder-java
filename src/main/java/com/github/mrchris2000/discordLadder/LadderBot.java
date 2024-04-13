@@ -62,7 +62,7 @@ public class LadderBot {
             }
         }
         AutoCompletes completions = new AutoCompletes(client, connection);
-        completions.addPlayers();
+        //completions.addPlayers();
 
         /* Call our code to handle creating/deleting/editing our global slash commands.
 
