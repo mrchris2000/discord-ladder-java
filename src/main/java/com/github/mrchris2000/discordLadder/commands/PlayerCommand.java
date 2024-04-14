@@ -33,13 +33,7 @@ public class PlayerCommand implements SlashCommand {
         this.LOGGER = LOGGER;
 
         //Determine role
-        Iterator<Role> serverRoles = guild.getRoles().toIterable().iterator();
-        while (serverRoles.hasNext()) {
-            Role serverRole = serverRoles.next();
-            if (serverRole.getName().contains(LadderBot.tournament_role)) {
-                role_id = serverRole.getId();
-            }
-        }
+        role_id = LadderBot.role_id;
     }
 
     @Override

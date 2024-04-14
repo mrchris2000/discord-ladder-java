@@ -2,6 +2,7 @@ package com.github.mrchris2000.discordLadder.commands;
 
 import com.github.mrchris2000.discordLadder.LadderBot;
 import com.github.mrchris2000.discordLadder.infra.AutoCompletes;
+import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
@@ -33,6 +34,9 @@ public class ChallengeCommand implements SlashCommand {
         this.completes = completes;
         this.guild = guild;
         this.LOGGER = LOGGER;
+
+        //Determine role
+        role_id = LadderBot.role_id;
     }
 
     //Challenge 2 up at most
@@ -53,6 +57,8 @@ public class ChallengeCommand implements SlashCommand {
     private final Guild guild;
 
     private final Logger LOGGER;
+
+    private final Snowflake role_id;
 
     public Mono<Void> complete(ChatInputAutoCompleteEvent event) {
         List<ApplicationCommandOptionChoiceData> suggestions = new ArrayList<>();
@@ -165,19 +171,10 @@ public class ChallengeCommand implements SlashCommand {
         ResultSet rs = null;
         try {
             st = connection.createStatement();
-            Boolean mem = false;
             Member user = event.getInteraction().getMember().get();
-            Iterator<Role> userRoles = user.getRoles().toIterable().iterator();
-            while (userRoles.hasNext()) {
-                Role current = userRoles.next();
-                if (current.getName().contains(LadderBot.tournament_role)) {
-                    mem = true;
-                    break;
-                }
-            }
-            if (!mem) {
-                return event.createFollowup()
-                        .withEphemeral(false).withContent("Sorry <@" + user.getId().asString() + "> you must be a tournament member to do this");
+            Iterator<Snowflake> userRoles = user.getRoleIds().iterator();
+            if(!user.getRoleIds().contains(role_id)){
+                return event.createFollowup().withEphemeral(false).withContent("Sorry <@" + user.getId().asString() + "> you must be a tournament member to do this");
             }
 
             if (event.getOption("confront").isPresent()) {

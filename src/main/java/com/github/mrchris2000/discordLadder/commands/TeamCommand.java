@@ -2,6 +2,7 @@ package com.github.mrchris2000.discordLadder.commands;
 
 import com.github.mrchris2000.discordLadder.LadderBot;
 import com.github.mrchris2000.discordLadder.infra.AutoCompletes;
+import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
@@ -29,6 +30,8 @@ public class TeamCommand implements SlashCommand {
         this.completes = completes;
         this.guild = guild;
         this.LOGGER = LOGGER;
+
+        role_id = LadderBot.role_id;
     }
 
     @Override
@@ -43,6 +46,9 @@ public class TeamCommand implements SlashCommand {
     private final Guild guild;
 
     private final Logger LOGGER;
+
+    private final Snowflake role_id;
+
 
     public Mono<Void> complete(ChatInputAutoCompleteEvent event) {
         Statement st = null;
@@ -89,18 +95,9 @@ public class TeamCommand implements SlashCommand {
         Statement st = null;
         ResultSet rs = null;
         try {
-
-            Boolean mem = false;
             Member user = event.getInteraction().getMember().get();
-            Iterator<Role> userRoles = user.getRoles().toIterable().iterator();
-            while (userRoles.hasNext()) {
-                Role current = userRoles.next();
-                if (current.getName().contains(LadderBot.tournament_role)) {
-                    mem = true;
-                    break;
-                }
-            }
-            if (!mem) {
+            Iterator<Snowflake> userRoles = user.getRoleIds().iterator();
+            if(!user.getRoleIds().contains(role_id)){
                 return event.createFollowup().withEphemeral(false).withContent("Sorry <@" + user.getId().asString() + "> you must be a tournament member to do this");
             }
             st = connection.createStatement();

@@ -2,6 +2,7 @@ package com.github.mrchris2000.discordLadder.commands;
 
 import com.github.mrchris2000.discordLadder.LadderBot;
 import com.github.mrchris2000.discordLadder.infra.AutoCompletes;
+import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
@@ -29,6 +30,8 @@ public class LadderCommand implements SlashCommand {
         this.completes = completes;
         this.guild = guild;
         this.LOGGER = LOGGER;
+
+        role_id = LadderBot.role_id;
     }
 
     @Override
@@ -43,6 +46,9 @@ public class LadderCommand implements SlashCommand {
     private final Guild guild;
 
     private final Logger LOGGER;
+
+    private final Snowflake role_id;
+
 
     public Mono<Void> complete(ChatInputAutoCompleteEvent event) {
         //There are no completes needed for this command.

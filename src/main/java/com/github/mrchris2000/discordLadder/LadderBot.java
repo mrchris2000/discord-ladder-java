@@ -2,6 +2,7 @@ package com.github.mrchris2000.discordLadder;
 
 import com.github.mrchris2000.discordLadder.infra.AutoCompletes;
 import com.github.mrchris2000.discordLadder.listeners.SlashCommandListener;
+import discord4j.common.util.Snowflake;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
@@ -34,6 +35,8 @@ public class LadderBot {
 
     public static String GUILD_NAME = envs.get("GUILD_NAME");
 
+    public static Snowflake role_id;
+
     public static void main(String[] args) throws Exception {
         //Creates the database client and connects to the database
         LOGGER.debug("Role: " + LadderBot.tournament_role);
@@ -59,6 +62,14 @@ public class LadderBot {
             guild = guilds.next();
             if (guild.getName().contains(LadderBot.GUILD_NAME)) {
                 break;
+            }
+        }
+
+        Iterator<Role> serverRoles = guild.getRoles().toIterable().iterator();
+        while (serverRoles.hasNext()) {
+            Role serverRole = serverRoles.next();
+            if (serverRole.getName().contains(LadderBot.tournament_role)) {
+                role_id = serverRole.getId();
             }
         }
         AutoCompletes completions = new AutoCompletes(client, connection);
