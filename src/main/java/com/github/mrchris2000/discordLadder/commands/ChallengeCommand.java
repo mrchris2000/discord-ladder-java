@@ -80,6 +80,7 @@ public class ChallengeCommand implements SlashCommand {
 
     public Mono<Message> buttons(ButtonInteractionEvent event) {
 
+
         List<Button> buttons = event.getInteraction().getMessage().map(message -> message.getComponents()).orElseGet(() -> List.of()).stream().filter(ActionRow.class::isInstance).map(ActionRow.class::cast).flatMap(actionRow -> actionRow.getChildren().stream()).filter(Button.class::isInstance).map(Button.class::cast).collect(Collectors.toList());
         Iterator butt = buttons.iterator();
         Button clicked = null;
@@ -147,7 +148,11 @@ public class ChallengeCommand implements SlashCommand {
     }
 
     @Override
-    public Mono<Void> handle(ChatInputInteractionEvent event) {
+    public Mono<Message> handle(ChatInputInteractionEvent event) {
+        return event.deferReply().then(processEvent(event));
+    }
+
+    public Mono<Message> processEvent(ChatInputInteractionEvent event) {
         /*
         Since slash command options are optional according to discord, we will wrap it into the following function
         that gets the value of our option as a String without chaining several .get() on all the optional values
@@ -171,7 +176,7 @@ public class ChallengeCommand implements SlashCommand {
                 }
             }
             if (!mem) {
-                return event.reply()
+                return event.createFollowup()
                         .withEphemeral(false).withContent("Sorry <@" + user.getId().asString() + "> you must be a tournament member to do this");
             }
 
@@ -194,7 +199,7 @@ public class ChallengeCommand implements SlashCommand {
                     e.printStackTrace();
                 }
                 if ("".equals(team_name)) {
-                    return event.reply()
+                    return event.createFollowup()
                             .withEphemeral(false).withContent("<@" + user.getId().asString() + ">, you can't challenge because you're not in a team!");
                 }
 
@@ -233,35 +238,58 @@ public class ChallengeCommand implements SlashCommand {
 //                }
                 int hardest = 0;
                 String hardest_name = "";
+                String hardest_match_count = "";
                 int hardest_rank = 0;
                 if (ranksResult.next()) {
                     hardest = ranksResult.getInt(1);
                     hardest_rank = ranksResult.getInt(2);
-                    PreparedStatement hardestQuery = connection.prepareStatement("select team_name from teams where team_id=?");
+                    PreparedStatement hardestQuery = connection.prepareStatement("SELECT \n"
+                            + "    t.team_name,\n"
+                            + "    COUNT(m.match_id) AS matches_played\n"
+                            + "FROM \n"
+                            + "    teams t\n"
+                            + "LEFT JOIN \n"
+                            + "    matches m ON m.team_one_id = t.team_id OR m.team_two_id = t.team_id\n"
+                            + "WHERE \n"
+                            + "    t.team_id = ?\n"
+                            + "GROUP BY \n"
+                            + "    t.team_name;\n");
                     hardestQuery.setInt(1, hardest);
                     ResultSet hardestResult = hardestQuery.executeQuery();
                     if (hardestResult.next()) { // Assuming there is at least one row in the result set
-                        hardest_name = hardestResult.getString(1);
-
+                        hardest_name = hardestResult.getString("team_name");
+                        hardest_match_count = hardestResult.getString("matches_played");
                     }
                 }
                 int easiest = 0;
                 String easiest_name = "";
+                String easiest_match_count = "";
                 int easiest_rank = 0;
                 if (ranksResult.next()) {
                     easiest = ranksResult.getInt(1);
                     easiest_rank = ranksResult.getInt(2);
-                    PreparedStatement easiestQuery = connection.prepareStatement("select team_name from teams where team_id=?");
+                    PreparedStatement easiestQuery = connection.prepareStatement("SELECT \n"
+                            + "    t.team_name,\n"
+                            + "    COUNT(m.match_id) AS matches_played\n"
+                            + "FROM \n"
+                            + "    teams t\n"
+                            + "LEFT JOIN \n"
+                            + "    matches m ON m.team_one_id = t.team_id OR m.team_two_id = t.team_id\n"
+                            + "WHERE \n"
+                            + "    t.team_id = ?\n"
+                            + "GROUP BY \n"
+                            + "    t.team_name;\n");
                     easiestQuery.setInt(1, easiest);
                     ResultSet easiestResult = easiestQuery.executeQuery();
                     if (easiestResult.next()) { // Assuming there is at least one row in the result set
-                        easiest_name = easiestResult.getString(1);
+                        easiest_name = easiestResult.getString("team_name");
+                        easiest_match_count = easiestResult.getString("matches_played");
                     }
                 }
                 //I feel dirty for what I have just done.
 
                 if (hardest == 0 && easiest == 0) {
-                    return event.reply()
+                    return event.createFollowup()
                             .withEphemeral(false).withContent("Hey  <@" + user.getId().asString() + ">, your team is the top of the ladder! Nobody to challenge :(");
                 }
                 //Replace dummy team data with info from the backend.
@@ -280,7 +308,7 @@ public class ChallengeCommand implements SlashCommand {
                 dynamic.addField("Total games played", "", true);
                 dynamic.addField("Ladder position", "", true);
                 dynamic.addField("", hardest_name, true);
-                dynamic.addField("", "10", true);
+                dynamic.addField("", hardest_match_count, true);
                 dynamic.addField("", Integer.toString(hardest_rank), true);
                 Button successButton = null;
                 Button dangerButton = Button.danger("challenge-dangerButton-id" + UUID.randomUUID(), hardest_name);
@@ -288,7 +316,7 @@ public class ChallengeCommand implements SlashCommand {
                 if (easiest != 0) {
                     successButton = Button.success("challenge-successButton-id" + UUID.randomUUID(), easiest_name);
                     dynamic.addField("", easiest_name, true);
-                    dynamic.addField("", "8", true);
+                    dynamic.addField("", easiest_match_count, true);
                     dynamic.addField("", Integer.toString(easiest_rank), true);
                 }
                 embed = dynamic.build();
@@ -305,7 +333,7 @@ public class ChallengeCommand implements SlashCommand {
                 }
 
 
-                return event.reply(messageSpec);
+                return event.createFollowup().withEmbeds(embed).withComponents(messageSpec.components());
             } else if (event.getOption("result").isPresent()) {
                 ApplicationCommandInteractionOption type = event.getOption("result").get();
 
@@ -330,7 +358,7 @@ public class ChallengeCommand implements SlashCommand {
                     e.printStackTrace();
                 }
                 if ("".equals(player_team_name)) {
-                    return event.reply()
+                    return event.createFollowup()
                             .withEphemeral(false).withContent("<@" + user.getId().asString() + ">, you can't challenge because you're not in a team!");
                 }
 
@@ -381,7 +409,7 @@ public class ChallengeCommand implements SlashCommand {
                 int row = stMatchesCount.executeUpdate();
                 if (player_team_id != team_id) {
                     LOGGER.debug("Bailing because player team lost, so there are no changes to make");
-                    return event.reply()
+                    return event.createFollowup()
                             .withEphemeral(false).withContent("<@" + user.getId().asString() + ">, sorry for your loss!");
                 }
 
@@ -415,7 +443,7 @@ public class ChallengeCommand implements SlashCommand {
                 int ladRow2 = ladderSwitch2.executeUpdate();
 
 
-                return event.reply()
+                return event.createFollowup()
                         .withEphemeral(false).withContent("Thanks  <@" + user.getId().asString() + ">, you just registered a victory for " + team_name);
             }
 
@@ -431,7 +459,7 @@ public class ChallengeCommand implements SlashCommand {
                 e.printStackTrace();
             }
         }
-        return  event.reply()
+        return  event.createFollowup()
                 .withEphemeral(true).withContent("Challenge command failed, no valid option found");
     }
 

@@ -29,7 +29,7 @@ public class SlashCommandListener {
         commands.add(new LadderCommand(connection, completes, guild, LOGGER));
     }
 
-    public Mono<Void> handle(ChatInputInteractionEvent event) {
+    public Mono<Message> handle(ChatInputInteractionEvent event) {
         // Convert our array list to a flux that we can iterate through
         return Flux.fromIterable(commands)
                 //Filter out all commands that don't match the name of the command this event is for

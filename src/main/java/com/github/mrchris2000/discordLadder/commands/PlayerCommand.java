@@ -88,7 +88,11 @@ public class PlayerCommand implements SlashCommand {
     }
 
     @Override
-    public Mono<Void> handle(ChatInputInteractionEvent event) {
+    public Mono<Message> handle(ChatInputInteractionEvent event) {
+        return event.deferReply().then(processEvent(event));
+    }
+
+    public Mono<Message> processEvent(ChatInputInteractionEvent event) {
         /*
         Since slash command options are optional according to discord, we will wrap it into the following function
         that gets the value of our option as a String without chaining several .get() on all the optional values
@@ -121,7 +125,7 @@ public class PlayerCommand implements SlashCommand {
                 int row = ((PreparedStatement) st).executeUpdate();
 
 
-                return event.reply()
+                return event.createFollowup()
                         .withEphemeral(false).withContent("Hey, <@" + user.getId().asString() + "> you've joined the tournament");
             } else if (event.getOption("update").isPresent()) {
                 ApplicationCommandInteractionOption type = event.getOption("update").get();
@@ -138,7 +142,7 @@ public class PlayerCommand implements SlashCommand {
                 ((PreparedStatement) st).setString(2, user.getUsername());
                 int row = ((PreparedStatement) st).executeUpdate();
 
-                return event.reply()
+                return event.createFollowup()
                         .withEphemeral(false).withContent("Thanks, <@" + user.getId().asString() + ">, your FAF name is now set to " + faf_name);
             } else if (event.getOption("leave").isPresent()) {
                 ApplicationCommandInteractionOption type = event.getOption("leave").get();
@@ -153,12 +157,12 @@ public class PlayerCommand implements SlashCommand {
                 ((PreparedStatement) st).setString(1, user.getUsername());
                 int row = ((PreparedStatement) st).executeUpdate();
 
-                return event.reply()
+                return event.createFollowup()
                         .withEphemeral(false).withContent("Sad to see you go, <@" + user.getId().asString() + ">");
             }
         } catch (Exception e) {
             if (e.getMessage().contains("duplicate")) {
-                return event.reply()
+                return event.createFollowup()
                         .withEphemeral(false).withContent("Player is already a tournament member");
             }
             e.printStackTrace();
@@ -172,7 +176,7 @@ public class PlayerCommand implements SlashCommand {
                 e.printStackTrace();
             }
         }
-        return  event.reply()
+        return  event.createFollowup()
                 .withEphemeral(true).withContent("Player command failed, no valid option found");
     }
 

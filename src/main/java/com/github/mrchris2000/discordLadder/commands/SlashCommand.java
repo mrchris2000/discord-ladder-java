@@ -17,7 +17,7 @@ public interface SlashCommand {
 
     String getName();
 
-    Mono<Void> handle(ChatInputInteractionEvent event);
+    Mono<Message> handle(ChatInputInteractionEvent event);
 
     Mono<Void> complete(ChatInputAutoCompleteEvent event);
 

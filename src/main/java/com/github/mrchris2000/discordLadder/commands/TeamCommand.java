@@ -81,10 +81,15 @@ public class TeamCommand implements SlashCommand {
     }
 
     @Override
-    public Mono<Void> handle(ChatInputInteractionEvent event) {
+    public Mono<Message> handle(ChatInputInteractionEvent event) {
+        return event.deferReply().then(processEvent(event));
+    }
+
+    public Mono<Message> processEvent(ChatInputInteractionEvent event) {
         Statement st = null;
         ResultSet rs = null;
         try {
+
             Boolean mem = false;
             Member user = event.getInteraction().getMember().get();
             Iterator<Role> userRoles = user.getRoles().toIterable().iterator();
@@ -96,8 +101,7 @@ public class TeamCommand implements SlashCommand {
                 }
             }
             if (!mem) {
-                return event.reply()
-                        .withEphemeral(false).withContent("Sorry <@" + user.getId().asString() + "> you must be a tournament member to do this");
+                return event.createFollowup().withEphemeral(false).withContent("Sorry <@" + user.getId().asString() + "> you must be a tournament member to do this");
             }
             st = connection.createStatement();
             if (event.getOption("create").isPresent()) {
@@ -134,7 +138,7 @@ public class TeamCommand implements SlashCommand {
                 ((PreparedStatement) st).setInt(3, 0);
                 int ladderrow = ((PreparedStatement) st).executeUpdate();
 
-                return event.reply()
+                return event.createFollowup()
                         .withEphemeral(false).withContent("<@" + user.getId().asString() + "> added team: " + team_name);
             } else if (event.getOption("remove").isPresent()) {
                 ApplicationCommandInteractionOption type = event.getOption("remove").get();
@@ -149,7 +153,7 @@ public class TeamCommand implements SlashCommand {
 
                 //ToDo: Condense ladder up when team is removed
 
-                return event.reply()
+                return event.createFollowup()
                         .withEphemeral(false).withContent("<@" + user.getId().asString() + "> removed team: " + name);
             } else if (event.getOption("stats").isPresent()) {
                 ApplicationCommandInteractionOption type = event.getOption("stats").get();
@@ -290,7 +294,7 @@ public class TeamCommand implements SlashCommand {
                     e.printStackTrace();
                 }
 
-                return event.reply()
+                return event.createFollowup()
                         .withEphemeral(false).withEmbeds(embed);
             } else if (event.getOption("join").isPresent()) {
                 ApplicationCommandInteractionOption type = event.getOption("join").get();
@@ -340,18 +344,18 @@ public class TeamCommand implements SlashCommand {
                 }
                 //Is team full
                 if ("full".equals(playerNumber)) {
-                    return event.reply()
+                    return event.createFollowup()
                             .withEphemeral(false).withContent("Sorry <@" + user.getId().asString() + "> team " + team_name + " is currently full.");
                 }
                 //Player is already on the team?
                 if (player1_id == player_id) {
-                    return event.reply()
+                    return event.createFollowup()
                             .withEphemeral(false).withContent("Hey  <@" + user.getId().asString() + ">, you're already a member of' " + team_name);
                 } else if (player2_id == player_id) {
-                    return event.reply()
+                    return event.createFollowup()
                             .withEphemeral(false).withContent("Hey  <@" + user.getId().asString() + ">, you're already a member of' " + team_name);
                 } else if (!"".equals(current_team)) {
-                    return event.reply()
+                    return event.createFollowup()
                             .withEphemeral(false).withContent("Hey  <@" + user.getId().asString() + ">, you're already a member of' " + current_team);
                 }
 
@@ -367,7 +371,7 @@ public class TeamCommand implements SlashCommand {
                 ((PreparedStatement) st).setString(1, team_name);
                 int playerrow = ((PreparedStatement) st).executeUpdate();
 
-                return event.reply()
+                return event.createFollowup()
                         .withEphemeral(false).withContent("Congratulations  <@" + user.getId().asString() + ">, you just joined " + team_name);
             } else if (event.getOption("leave").isPresent()) {
                 ApplicationCommandInteractionOption type = event.getOption("leave").get();
@@ -392,7 +396,7 @@ public class TeamCommand implements SlashCommand {
                 if (current_team == null) {
                     current_team = "";
                 } else if (!current_team.equals(team_name)) {
-                    return event.reply()
+                    return event.createFollowup()
                             .withEphemeral(false).withContent("<@" + user.getId().asString() + ">, you can't leave a team you're not a member of!");
                 }
 
@@ -422,7 +426,7 @@ public class TeamCommand implements SlashCommand {
                     e.printStackTrace();
                 }
 
-                return event.reply()
+                return event.createFollowup()
                         .withEphemeral(false).withContent("Oh dear,  <@" + user.getId().asString() + ">, you just left " + team_name);
             }
         } catch (Exception e) {
@@ -440,7 +444,7 @@ public class TeamCommand implements SlashCommand {
                 e.printStackTrace();
             }
         }
-        return  event.reply()
+        return  event.createFollowup()
                 .withEphemeral(true).withContent("Team command failed, no valid option found");
     }
 

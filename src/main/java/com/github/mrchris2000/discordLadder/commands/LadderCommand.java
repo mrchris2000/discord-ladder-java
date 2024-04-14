@@ -31,12 +31,6 @@ public class LadderCommand implements SlashCommand {
         this.LOGGER = LOGGER;
     }
 
-    //Challenge 2 up at most
-    //No response after 5 days auto default
-    //default means challenger goes above challengee
-
-
-
     @Override
     public String getName() {
         return "ladder";
@@ -51,35 +45,21 @@ public class LadderCommand implements SlashCommand {
     private final Logger LOGGER;
 
     public Mono<Void> complete(ChatInputAutoCompleteEvent event) {
-        List<ApplicationCommandOptionChoiceData> suggestions = new ArrayList<>();
-        if ("ladder".equals(event.getCommandName())) {
-            if (event.getOption("create").isPresent()) {
-                return event.respondWithSuggestions(completes.getTeamNames());
-            } else if (event.getOption("stats").isPresent()) {
-                return event.respondWithSuggestions(completes.getTeamNames());
-            } else if (event.getOption("add").isPresent()) {
-                ApplicationCommandInteractionOption type = event.getOption("add").get();
-                /*
-                    We need the subtype of the option.
-                    Options are collective, so the current option is the last in the list.
-                 */
-                String option = type.getOptions().get(type.getOptions().size() - 1).getName();
-                if ("team_name".equals(option)) {
-                    return event.respondWithSuggestions(completes.getTeamNames());
-                } else {
-                    // return event.respondWithSuggestions(completes.getPlayerNames());
-                }
-            }
-        }
-        return event.respondWithSuggestions(suggestions);
+        //There are no completes needed for this command.
+        return null;
     }
 
     public Mono<Message> buttons(ButtonInteractionEvent event) {
+        //There are no buttons to be used for this command.
         return null;
     }
 
     @Override
-    public Mono<Void> handle(ChatInputInteractionEvent event) {
+    public Mono<Message> handle(ChatInputInteractionEvent event) {
+        return event.deferReply().then(processEvent(event));
+    }
+
+    public Mono<Message> processEvent(ChatInputInteractionEvent event) {
         /*
         Since slash command options are optional according to discord, we will wrap it into the following function
         that gets the value of our option as a String without chaining several .get() on all the optional values
@@ -146,7 +126,7 @@ public class LadderCommand implements SlashCommand {
             }
             embed = dynamic.build();
 
-            return event.reply().withEmbeds(embed);
+            return event.createFollowup().withEmbeds(embed);
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -159,7 +139,7 @@ public class LadderCommand implements SlashCommand {
                 e.printStackTrace();
             }
         }
-        return  event.reply()
+        return  event.createFollowup()
                 .withEphemeral(true).withContent("Challenge command failed, no valid option found");
     }
 
