@@ -24,14 +24,11 @@ public class GlobalCommandRegistrar {
 
     private final RestClient restClient;
 
-    private final Connection dbConnection;
-
     // The name of the folder the commands json is in, inside our resources folder
     private static final String commandsFolderName = "commands/";
 
-    public GlobalCommandRegistrar(RestClient restClient, Connection connection, Guild guild) {
+    public GlobalCommandRegistrar(RestClient restClient, Guild guild) {
         this.restClient = restClient;
-        this.dbConnection = connection;
     }
 
     //Since this will only run once on startup, blocking is okay.

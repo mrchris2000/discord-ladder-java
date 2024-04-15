@@ -13,24 +13,21 @@ import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.rest.util.Color;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import java.sql.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Properties;
 
 public class PlayerCommand implements SlashCommand {
-    public PlayerCommand(Connection connection, AutoCompletes completes, Guild guild, Logger LOGGER) {
-        this.connection = connection;
+    public PlayerCommand(AutoCompletes completes, Guild guild) {
         this.completes = completes;
         this.guild = guild;
-        this.LOGGER = LOGGER;
 
         //Determine role
         role_id = LadderBot.role_id;
@@ -41,15 +38,15 @@ public class PlayerCommand implements SlashCommand {
         return "player";
     }
 
-    private final Connection connection;
+    private Connection connection;
 
     private final Guild guild;
 
     private final AutoCompletes completes;
 
-    private final Logger LOGGER;
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(LadderBot.class);
 
-    private Snowflake role_id;
+    private final Snowflake role_id;
 
     public Mono<Void> complete(ChatInputAutoCompleteEvent event) {
         Statement st = null;
@@ -97,6 +94,10 @@ public class PlayerCommand implements SlashCommand {
         //ApplicationCommandInteractionOption root = event.getOption("team").get();
         Statement st = null;
         try {
+            final Properties props = new Properties();
+            props.setProperty("user", "ladder");
+            props.setProperty("password", "discPwd#!");
+            connection = DriverManager.getConnection("jdbc:postgresql://192.168.0.20:5432/discladder", props);
             Member user = event.getInteraction().getMember().get();
             st = connection.createStatement();
             if (event.getOption("join").isPresent()) {
@@ -108,7 +109,7 @@ public class PlayerCommand implements SlashCommand {
                 LOGGER.debug("Submitting user? : " + user.getUsername() + " :: " + user.getDisplayName());
 
                 //Assign role
-                user.addRole(role_id).block();
+                user.addRole(role_id);
 
                 //Add user to the database
                 st = connection.prepareStatement("INSERT INTO players (player_name, discord_id, fafName, active) VALUES (?, ?, ?, ?) ON CONFLICT (player_name) DO UPDATE SET active=true;");
@@ -144,7 +145,7 @@ public class PlayerCommand implements SlashCommand {
                 LOGGER.debug("Submitting user? : " + user.getUsername() + " :: " + user.getDisplayName() + " :: discord_id : " + user.getId().asString());
 
                 //Remove role
-                user.removeRole(role_id).block();
+                user.removeRole(role_id);
 
                 //Update user to the database
                 st = connection.prepareStatement("UPDATE players SET active=FALSE WHERE player_name=?");
@@ -165,6 +166,7 @@ public class PlayerCommand implements SlashCommand {
                 if (st != null) {
                     st.close();
                 }
+                connection.close();
             } catch (Exception e) {
                 //Well this is fucked then...
                 e.printStackTrace();

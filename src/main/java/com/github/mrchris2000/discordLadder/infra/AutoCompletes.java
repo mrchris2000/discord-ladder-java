@@ -14,6 +14,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Properties;
 import java.util.logging.Logger;
 
 public class AutoCompletes {
@@ -22,9 +23,8 @@ public class AutoCompletes {
     GatewayDiscordClient client;
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(LadderBot.class);
 
-    public AutoCompletes(GatewayDiscordClient client, Connection connection) {
+    public AutoCompletes(GatewayDiscordClient client) {
         this.client = client;
-        this.connection = connection;
     }
 
     //Register players to the collection of players that are included
@@ -69,6 +69,10 @@ public class AutoCompletes {
     private void addPlayerToDB(Member member) {
         PreparedStatement st;
         try {
+            final Properties props = new Properties();
+            props.setProperty("user", "ladder");
+            props.setProperty("password", "discPwd#!");
+            connection = DriverManager.getConnection("jdbc:postgresql://192.168.0.20:5432/discladder", props);
             connection.setAutoCommit(true);
             st = connection.prepareStatement("INSERT INTO players (player_name, discord_id, fafName, active) VALUES (?, ?, ?, ?);");
             st.setString(1, member.getDisplayName());
@@ -80,50 +84,24 @@ public class AutoCompletes {
 
             LOGGER.debug("Adding user - rows created:" + row);
             st.close();
+            connection.close();
         } catch (Exception e) {
             e.printStackTrace();
             LOGGER.error(e.getMessage());
         }
     }
 
-    public List<ApplicationCommandOptionChoiceData> getPlayerNames() {
-        List<ApplicationCommandOptionChoiceData> suggestions = new ArrayList<>();
-        Statement st = null;
-        ResultSet rs = null;
-        try {
-            st = connection.createStatement();
-            st.executeQuery("select player_name from players where active=TRUE");
-            rs = st.getResultSet();
-            String output = "";
-            while (rs.next()) {
-                LOGGER.debug("Adding player to suggestions: " + rs.getString("player_name"));
-                suggestions.add(ApplicationCommandOptionChoiceData.builder().name(rs.getString("player_name")).value(rs.getString("player_name")).build());
-            }
-            return suggestions;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return suggestions;
-        } finally {
-
-            try {
-                if (rs != null) {
-                    rs.close();
-                }
-                if (st != null) {
-                    st.close();
-                }
-            } catch (Exception e) {
-                //Well this is fucked then...
-                e.printStackTrace();
-            }
-        }
-    }
 
     public List<ApplicationCommandOptionChoiceData> getTeamNames() {
         List<ApplicationCommandOptionChoiceData> suggestions = new ArrayList<>();
+        suggestions.clear();
         Statement st = null;
         ResultSet rs = null;
         try {
+            final Properties props = new Properties();
+            props.setProperty("user", "ladder");
+            props.setProperty("password", "discPwd#!");
+            connection = DriverManager.getConnection("jdbc:postgresql://192.168.0.20:5432/discladder", props);
             st = connection.createStatement();
             st.executeQuery("select team_name from teams");
             rs = st.getResultSet();
@@ -132,6 +110,7 @@ public class AutoCompletes {
                 LOGGER.debug("Adding team to suggestions: " + rs.getString("team_name"));
                 suggestions.add(ApplicationCommandOptionChoiceData.builder().name(rs.getString("team_name")).value(rs.getString("team_name")).build());
             }
+            connection.close();
             return suggestions;
         } catch (Exception e) {
             e.printStackTrace();
@@ -145,6 +124,7 @@ public class AutoCompletes {
                 if (st != null) {
                     st.close();
                 }
+                connection.close();
             } catch (Exception e) {
                 //Well this is fucked then...
                 e.printStackTrace();

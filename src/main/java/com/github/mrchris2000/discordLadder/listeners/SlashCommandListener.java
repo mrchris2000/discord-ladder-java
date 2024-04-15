@@ -19,14 +19,12 @@ public class SlashCommandListener {
     //An array list of classes that implement the SlashCommand interface
     private final static List<SlashCommand> commands = new ArrayList<>();
 
-    Connection connection;
-
-    public SlashCommandListener(Connection connection, AutoCompletes completes, Guild guild, Logger LOGGER) {
+    public SlashCommandListener(AutoCompletes completes, Guild guild) {
         //We register our commands here when the class is initialized
-        commands.add(new TeamCommand(connection, completes, guild, LOGGER));
-        commands.add(new PlayerCommand(connection, completes, guild, LOGGER));
-        commands.add(new ChallengeCommand(connection, completes, guild, LOGGER));
-        commands.add(new LadderCommand(connection, completes, guild, LOGGER));
+        commands.add(new TeamCommand(completes, guild));
+        commands.add(new PlayerCommand(completes, guild));
+        commands.add(new ChallengeCommand(completes, guild));
+        commands.add(new LadderCommand(completes, guild));
     }
 
     public Mono<Message> handle(ChatInputInteractionEvent event) {
@@ -69,9 +67,5 @@ public class SlashCommandListener {
                 .next()
                 //have our command class handle all the logic related to its specific command.
                 .flatMap(command -> command.buttons(event));
-    }
-
-    public void setConnection(Connection connection) {
-        this.connection = connection;
     }
 }

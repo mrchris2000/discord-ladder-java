@@ -14,6 +14,7 @@ import discord4j.core.spec.*;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.rest.util.Color;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
 import java.sql.*;
@@ -25,11 +26,9 @@ public class TeamCommand implements SlashCommand {
 
     private EmbedCreateSpec embedCreateSpec;
 
-    public TeamCommand(Connection connection, AutoCompletes completes, Guild guild, Logger LOGGER) {
-        this.connection = connection;
+    public TeamCommand(AutoCompletes completes, Guild guild) {
         this.completes = completes;
         this.guild = guild;
-        this.LOGGER = LOGGER;
 
         role_id = LadderBot.role_id;
     }
@@ -39,25 +38,20 @@ public class TeamCommand implements SlashCommand {
         return "team";
     }
 
-    private final Connection connection;
+    private Connection connection;
 
     private final AutoCompletes completes;
 
     private final Guild guild;
 
-    private final Logger LOGGER;
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(LadderBot.class);
 
     private final Snowflake role_id;
 
-
     public Mono<Void> complete(ChatInputAutoCompleteEvent event) {
-        Statement st = null;
-        ResultSet rs = null;
         List<ApplicationCommandOptionChoiceData> suggestions = new ArrayList<>();
         if ("team".equals(event.getCommandName())) {
-            if (event.getOption("create").isPresent()) {
-                return event.respondWithSuggestions(completes.getTeamNames());
-            } else if (event.getOption("remove").isPresent()) {
+            if (event.getOption("remove").isPresent()) {
                 return event.respondWithSuggestions(completes.getTeamNames());
             } else if (event.getOption("join").isPresent()) {
                 return event.respondWithSuggestions(completes.getTeamNames());
@@ -65,18 +59,6 @@ public class TeamCommand implements SlashCommand {
                 return event.respondWithSuggestions(completes.getTeamNames());
             } else if (event.getOption("stats").isPresent()) {
                 return event.respondWithSuggestions(completes.getTeamNames());
-            } else if (event.getOption("add").isPresent()) {
-                ApplicationCommandInteractionOption type = event.getOption("add").get();
-                /*
-                    We need the subtype of the option.
-                    Options are collective, so the current option is the last in the list.
-                 */
-                String option = type.getOptions().get(type.getOptions().size() - 1).getName();
-                if ("team_name".equals(option)) {
-                    return event.respondWithSuggestions(completes.getTeamNames());
-                }
-                //else
-                    //return event.respondWithSuggestions(completes.getPlayerNames());
             }
         }
         return event.respondWithSuggestions(suggestions);
@@ -95,9 +77,13 @@ public class TeamCommand implements SlashCommand {
         Statement st = null;
         ResultSet rs = null;
         try {
+            final Properties props = new Properties();
+            props.setProperty("user", "ladder");
+            props.setProperty("password", "discPwd#!");
+            connection = DriverManager.getConnection("jdbc:postgresql://192.168.0.20:5432/discladder", props);
             Member user = event.getInteraction().getMember().get();
             Iterator<Snowflake> userRoles = user.getRoleIds().iterator();
-            if(!user.getRoleIds().contains(role_id)){
+            if (!user.getRoleIds().contains(role_id)) {
                 return event.createFollowup().withEphemeral(false).withContent("Sorry <@" + user.getId().asString() + "> you must be a tournament member to do this");
             }
             st = connection.createStatement();
@@ -436,6 +422,7 @@ public class TeamCommand implements SlashCommand {
                 if (st != null) {
                     st.close();
                 }
+                connection.close();
             } catch (Exception e) {
                 //Well this is fucked then...
                 e.printStackTrace();

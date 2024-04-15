@@ -16,20 +16,21 @@ import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.rest.util.Color;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 public class LadderCommand implements SlashCommand {
-    public LadderCommand(Connection connection, AutoCompletes completes, Guild guild, Logger LOGGER) {
-        this.connection = connection;
+    public LadderCommand(AutoCompletes completes, Guild guild) {
         this.completes = completes;
         this.guild = guild;
-        this.LOGGER = LOGGER;
 
         role_id = LadderBot.role_id;
     }
@@ -39,13 +40,13 @@ public class LadderCommand implements SlashCommand {
         return "ladder";
     }
 
-    private final Connection connection;
+    private Connection connection;
 
     private final AutoCompletes completes;
 
     private final Guild guild;
 
-    private final Logger LOGGER;
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(LadderBot.class);
 
     private final Snowflake role_id;
 
@@ -72,9 +73,14 @@ public class LadderCommand implements SlashCommand {
 
         In this case, there is no fear it will return empty/null as this is marked "required: true" in our json.
          */
+
         Statement st = null;
         ResultSet rs = null;
         try {
+            final Properties props = new Properties();
+            props.setProperty("user", "ladder");
+            props.setProperty("password", "discPwd#!");
+            connection = DriverManager.getConnection("jdbc:postgresql://192.168.0.20:5432/discladder", props);
             st = connection.createStatement();
 
             //Replace dummy team data with info from the backend.
@@ -140,6 +146,7 @@ public class LadderCommand implements SlashCommand {
                 if (st != null) {
                     st.close();
                 }
+                connection.close();
             } catch (Exception e) {
                 //Well this is fucked then...
                 e.printStackTrace();

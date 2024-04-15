@@ -6,6 +6,7 @@ import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
+import discord4j.core.object.Embed;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.component.ActionRow;
@@ -14,26 +15,23 @@ import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.Role;
+import discord4j.core.spec.EmbedCreateFields;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.rest.util.Color;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class ChallengeCommand implements SlashCommand {
-    public ChallengeCommand(Connection connection, AutoCompletes completes, Guild guild, Logger LOGGER) {
-        this.connection = connection;
+    public ChallengeCommand(AutoCompletes completes, Guild guild){
         this.completes = completes;
         this.guild = guild;
-        this.LOGGER = LOGGER;
 
         //Determine role
         role_id = LadderBot.role_id;
@@ -50,13 +48,13 @@ public class ChallengeCommand implements SlashCommand {
         return "challenge";
     }
 
-    private final Connection connection;
+    private Connection connection;
 
     private final AutoCompletes completes;
 
     private final Guild guild;
 
-    private final Logger LOGGER;
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(LadderBot.class);
 
     private final Snowflake role_id;
 
@@ -84,10 +82,15 @@ public class ChallengeCommand implements SlashCommand {
         return event.respondWithSuggestions(suggestions);
     }
 
+    @Override
     public Mono<Message> buttons(ButtonInteractionEvent event) {
+        return event.deferReply().then(processButtons(event));
+    }
 
-
+    public Mono<Message> processButtons(ButtonInteractionEvent event) {
         List<Button> buttons = event.getInteraction().getMessage().map(message -> message.getComponents()).orElseGet(() -> List.of()).stream().filter(ActionRow.class::isInstance).map(ActionRow.class::cast).flatMap(actionRow -> actionRow.getChildren().stream()).filter(Button.class::isInstance).map(Button.class::cast).collect(Collectors.toList());
+        //Embed source = event.getMessage().get().getEmbeds().get(0);
+        //EmbedCreateSpec dynamic  = EmbedCreateSpec.create().withFields((EmbedCreateFields.Field) source.getFields());
         Iterator butt = buttons.iterator();
         Button clicked = null;
         Member user = event.getInteraction().getMember().get();
@@ -96,16 +99,27 @@ public class ChallengeCommand implements SlashCommand {
         String challenged_team = "";
         while (butt.hasNext()) {
             Button button = (Button) butt.next();
-            if (button.getCustomId().get().contains(event.getCustomId())) {
+            if (button.getCustomId().get().contains(event.getCustomId()) && !button.isDisabled()) {
                 challenged_team = button.getLabel().get();
                 if (button.getStyle().getValue() == 4) {
+                    createMatch(user, challenged_team);
                     clicked = Button.danger(button.getCustomId().get(), "Match set with: " + button.getLabel().get()).disabled();
                 } else {
+                    createMatch(user, challenged_team);
                     clicked = Button.success(button.getCustomId().get(), "Match set with: " + button.getLabel().get()).disabled();
                 }
             }
         }
+        //EmbedCreateSpec dynamic = event.editReply().embeds().get().get().get(1);
+       Mono<Message> edit = event.editReply()
+                .withComponents(ActionRow.of(clicked));
 
+        return event.createFollowup().withComponents(ActionRow.of(clicked));
+
+    }
+
+    private void createMatch(Member user, String challenged_team) {
+        LOGGER.debug("Match create called");
         int challenged_team_id = 0;
         try {
             PreparedStatement stTeamId = connection.prepareStatement("select team_id from teams where team_name like ?");
@@ -121,7 +135,6 @@ public class ChallengeCommand implements SlashCommand {
                 PreparedStatement userQuery = connection.prepareStatement("select * from players where player_name like '" + user.getUsername() + "'");
 
                 ResultSet rs = userQuery.executeQuery();
-                ;
                 while (rs.next()) {
                     player_id = rs.getInt("player_id");
                     team_name = rs.getString("current_team");
@@ -129,7 +142,6 @@ public class ChallengeCommand implements SlashCommand {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            "".equals(team_name);
 
             PreparedStatement player_team = connection.prepareStatement("select team_id from teams where team_name like ?");
             player_team.setString(1, team_name);
@@ -139,18 +151,13 @@ public class ChallengeCommand implements SlashCommand {
             }
 
             PreparedStatement stMatchesCount = connection.prepareStatement("insert into matches (team_one_id, team_two_id) values (?,?)");
-            stMatchesCount.setInt(1, challenged_team_id);
-            stMatchesCount.setInt(2, player_team_id);
+            stMatchesCount.setInt(2, challenged_team_id);
+            stMatchesCount.setInt(1, player_team_id);
 
             int row = stMatchesCount.executeUpdate();
         } catch (Exception e) {
             e.printStackTrace();
         }
-        Mono<Message> edit = event.editReply()
-                .withComponents(ActionRow.of(clicked));
-
-        return event.deferEdit().then(edit);
-
     }
 
     @Override
@@ -170,10 +177,14 @@ public class ChallengeCommand implements SlashCommand {
         Statement st = null;
         ResultSet rs = null;
         try {
+            final Properties props = new Properties();
+            props.setProperty("user", "ladder");
+            props.setProperty("password", "discPwd#!");
+            connection = DriverManager.getConnection("jdbc:postgresql://192.168.0.20:5432/discladder", props);
             st = connection.createStatement();
             Member user = event.getInteraction().getMember().get();
             Iterator<Snowflake> userRoles = user.getRoleIds().iterator();
-            if(!user.getRoleIds().contains(role_id)){
+            if (!user.getRoleIds().contains(role_id)) {
                 return event.createFollowup().withEphemeral(false).withContent("Sorry <@" + user.getId().asString() + "> you must be a tournament member to do this");
             }
 
@@ -204,7 +215,7 @@ public class ChallengeCommand implements SlashCommand {
                 stTeamId.setString(1, team_name);
                 ResultSet rsTeamId = stTeamId.executeQuery();
                 if (rsTeamId.next()) { // Assuming there is at least one row in the result set
-                    team_id = rsTeamId.getInt(1);
+                    team_id = rsTeamId.getInt("team_id");
                 }
 
 //                //Get current team rank: SELECT rank FROM ladder WHERE team_id = current_team_id;
@@ -225,10 +236,10 @@ public class ChallengeCommand implements SlashCommand {
                 PreparedStatement ranks = connection.prepareStatement("SELECT team_id, rank\n"
                         + "                FROM ladder\n"
                         + "                WHERE rank < (SELECT rank FROM ladder WHERE team_id = ?)\n"
-                        + "                ORDER BY rank DESC\n"
+                        + "                ORDER BY rank ASC\n"
                         + "                LIMIT 2");
                 ranks.setInt(1, team_id);
-                LOGGER.debug("Rank query: " + ranks.toString());
+                //LOGGER.debug("Rank query: " + ranks.toString());
                 ResultSet ranksResult = ranks.executeQuery();
 //                while (ranksResult.next()) { // Assuming there is at least one row in the result set
 //                    LOGGER.debug("Closest rank teams: " + ranksResult.getInt(1));
@@ -236,6 +247,8 @@ public class ChallengeCommand implements SlashCommand {
                 int hardest = 0;
                 String hardest_name = "";
                 String hardest_match_count = "";
+                String hardPlayer1 = "";
+                String hardPlayer2 = "";
                 int hardest_rank = 0;
                 if (ranksResult.next()) {
                     hardest = ranksResult.getInt(1);
@@ -257,10 +270,23 @@ public class ChallengeCommand implements SlashCommand {
                         hardest_name = hardestResult.getString("team_name");
                         hardest_match_count = hardestResult.getString("matches_played");
                     }
+                    PreparedStatement hardestTeam = connection.prepareStatement("SELECT discord_id from players where current_team=?");
+                    hardestTeam.setString(1, hardest_name);
+                    ResultSet hardNames = hardestTeam.executeQuery();
+                    if (hardNames.next()) {
+                        hardPlayer1 = hardNames.getString(1);
+                    }
+                    if (hardNames.next()) {
+                        hardPlayer2 = hardNames.getString(1);
+                    }
                 }
+
+
                 int easiest = 0;
                 String easiest_name = "";
                 String easiest_match_count = "";
+                String easyPlayer1 = "";
+                String easyPlayer2 = "";
                 int easiest_rank = 0;
                 if (ranksResult.next()) {
                     easiest = ranksResult.getInt(1);
@@ -282,6 +308,15 @@ public class ChallengeCommand implements SlashCommand {
                         easiest_name = easiestResult.getString("team_name");
                         easiest_match_count = easiestResult.getString("matches_played");
                     }
+                    PreparedStatement easiestTeam = connection.prepareStatement("SELECT discord_id from players where current_team=?");
+                    easiestTeam.setString(1, hardest_name);
+                    ResultSet easyNames = easiestTeam.executeQuery();
+                    if (easyNames.next()) {
+                        easyPlayer1 = easyNames.getString(1);
+                    }
+                    if (easyNames.next()) {
+                        easyPlayer2 = easyNames.getString(1);
+                    }
                 }
                 //I feel dirty for what I have just done.
 
@@ -291,11 +326,13 @@ public class ChallengeCommand implements SlashCommand {
                 }
                 //Replace dummy team data with info from the backend.
                 //Need to get ladder data, current team location then one above is 'success' (green), two above is 'danger' (red)
+
+                //ToDo Need to get player names from each team!
                 EmbedCreateSpec embed = EmbedCreateSpec.builder()
                         .color(Color.of(255, 153, 0))
                         .title("Select your challenge:")
                         .author("Challenge options", "", "https://cdn.discordapp.com/avatars/1198703676987023450/8d7ab02c29bf51ac5f7c70615a2c3afb.png")
-                        .description(hardest_name + " (<@508675578229162004> and <@1198703676987023450>) \nor\n" + easiest_name + " (<@508675578229162004> and <@1198703676987023450>)")
+                        .description(hardest_name + " (<@" + hardPlayer1 + "> and <@" + hardPlayer2 + ">) \nor\n" + easiest_name + " (<@" + easyPlayer1 + "> and <@" + easyPlayer2 + ">)")
                         .image("https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/3db49b4c-f1c1-4bb6-85db-28aef1446bfb/d7xv7ks-55352abf-cd58-487f-ba38-7310f84bdf01.jpg?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7InBhdGgiOiJcL2ZcLzNkYjQ5YjRjLWYxYzEtNGJiNi04NWRiLTI4YWVmMTQ0NmJmYlwvZDd4djdrcy01NTM1MmFiZi1jZDU4LTQ4N2YtYmEzOC03MzEwZjg0YmRmMDEuanBnIn1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmZpbGUuZG93bmxvYWQiXX0.ojmjc2svRjM8ia-m5lZA7CU55VrLp-KMrRlcilW247I")
                         .build();
 
@@ -451,10 +488,12 @@ public class ChallengeCommand implements SlashCommand {
                 if (st != null) {
                     st.close();
                 }
+                connection.close();
             } catch (Exception e) {
                 //Well this is fucked then...
                 e.printStackTrace();
             }
+
         }
         return  event.createFollowup()
                 .withEphemeral(true).withContent("Challenge command failed, no valid option found");

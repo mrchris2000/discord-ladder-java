@@ -19,6 +19,7 @@ import discord4j.gateway.intent.IntentSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
+import reactor.blockhound.*;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -38,14 +39,13 @@ public class LadderBot {
     public static Snowflake role_id;
 
     public static void main(String[] args) throws Exception {
+
+        BlockHound.install();
+
         //Creates the database client and connects to the database
         LOGGER.debug("Role: " + LadderBot.tournament_role);
         LOGGER.debug("Token: " + LadderBot.discord_token);
         LOGGER.debug("Guild: " + LadderBot.GUILD_NAME);
-        final Properties props = new Properties();
-        props.setProperty("user", "ladder");
-        props.setProperty("password", "discPwd#!");
-        final Connection connection = DriverManager.getConnection("jdbc:postgresql://192.168.0.20:5432/discladder", props);
         Guild guild = null;
 
         //Creates the gateway client and connects to the gateway
@@ -72,7 +72,7 @@ public class LadderBot {
                 role_id = serverRole.getId();
             }
         }
-        AutoCompletes completions = new AutoCompletes(client, connection);
+        AutoCompletes completions = new AutoCompletes(client);
         //completions.addPlayers();
 
         /* Call our code to handle creating/deleting/editing our global slash commands.
@@ -84,13 +84,13 @@ public class LadderBot {
         */
         List<String> commands = List.of("team.json", "player.json", "challenge.json", "ladder.json");
         try {
-            new GlobalCommandRegistrar(client.getRestClient(), connection, guild).registerCommands(commands);
+            new GlobalCommandRegistrar(client.getRestClient(), guild).registerCommands(commands);
         } catch (Exception e) {
             LOGGER.error("Error trying to register global slash commands", e);
         }
 
         //Register our slash command listener
-        SlashCommandListener listener = new SlashCommandListener(connection, completions, guild, LOGGER);
+        SlashCommandListener listener = new SlashCommandListener( completions, guild);
         client.on(ChatInputAutoCompleteEvent.class, listener::complete).subscribe();
         client.on(ButtonInteractionEvent.class, listener::buttons).subscribe();
         client.on(ChatInputInteractionEvent.class, listener::handle)
