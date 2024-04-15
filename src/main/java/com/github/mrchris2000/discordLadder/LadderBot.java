@@ -47,7 +47,7 @@ public class LadderBot {
 
     public static void main(String[] args) throws Exception {
 
-        BlockHound.install();
+        //BlockHound.install();
 
         //Creates the database client and connects to the database
         LOGGER.debug("Role: " + LadderBot.tournament_role);
