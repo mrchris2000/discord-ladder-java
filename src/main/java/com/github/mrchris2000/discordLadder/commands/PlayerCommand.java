@@ -44,7 +44,7 @@ public class PlayerCommand implements SlashCommand {
 
     private final AutoCompletes completes;
 
-    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(LadderBot.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(LadderBot.class);
 
     private final Snowflake role_id;
 

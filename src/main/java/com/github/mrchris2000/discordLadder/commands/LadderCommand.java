@@ -46,7 +46,7 @@ public class LadderCommand implements SlashCommand {
 
     private final Guild guild;
 
-    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(LadderBot.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(LadderBot.class);
 
     private final Snowflake role_id;
 

@@ -29,7 +29,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class ChallengeCommand implements SlashCommand {
-    public ChallengeCommand(AutoCompletes completes, Guild guild){
+    public ChallengeCommand(AutoCompletes completes, Guild guild) {
         this.completes = completes;
         this.guild = guild;
 
@@ -54,7 +54,7 @@ public class ChallengeCommand implements SlashCommand {
 
     private final Guild guild;
 
-    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(LadderBot.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(LadderBot.class);
 
     private final Snowflake role_id;
 
@@ -122,6 +122,10 @@ public class ChallengeCommand implements SlashCommand {
         LOGGER.debug("Match create called");
         int challenged_team_id = 0;
         try {
+            final Properties props = new Properties();
+            props.setProperty("user", "ladder");
+            props.setProperty("password", "discPwd#!");
+            connection = DriverManager.getConnection("jdbc:postgresql://192.168.0.20:5432/discladder", props);
             PreparedStatement stTeamId = connection.prepareStatement("select team_id from teams where team_name like ?");
             stTeamId.setString(1, challenged_team);
             ResultSet rsTeamId = stTeamId.executeQuery();
@@ -155,6 +159,7 @@ public class ChallengeCommand implements SlashCommand {
             stMatchesCount.setInt(1, player_team_id);
 
             int row = stMatchesCount.executeUpdate();
+            connection.close();
         } catch (Exception e) {
             e.printStackTrace();
         }

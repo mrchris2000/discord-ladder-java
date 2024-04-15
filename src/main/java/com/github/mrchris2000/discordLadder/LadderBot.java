@@ -2,6 +2,7 @@ package com.github.mrchris2000.discordLadder;
 
 import com.github.mrchris2000.discordLadder.infra.AutoCompletes;
 import com.github.mrchris2000.discordLadder.listeners.SlashCommandListener;
+import discord4j.common.ReactorResources;
 import discord4j.common.util.Snowflake;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
@@ -16,11 +17,17 @@ import discord4j.core.object.entity.User;
 import discord4j.discordjson.json.*;
 import discord4j.gateway.intent.Intent;
 import discord4j.gateway.intent.IntentSet;
+import discord4j.rest.request.RouteMatcher;
+import discord4j.rest.response.ResponseFunction;
+import io.netty.channel.unix.Errors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
 import reactor.blockhound.*;
+import reactor.core.publisher.Flux;
+import reactor.netty.http.client.HttpClient;
+import reactor.retry.Retry;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.*;
@@ -49,7 +56,11 @@ public class LadderBot {
         Guild guild = null;
 
         //Creates the gateway client and connects to the gateway
-        final GatewayDiscordClient client = DiscordClientBuilder.create(LadderBot.discord_token).build()
+        final GatewayDiscordClient client = DiscordClientBuilder.create(LadderBot.discord_token).setReactorResources(ReactorResources.builder()
+                .httpClient(HttpClient.create()
+                        .compress(true)
+                        .keepAlive(false)
+                        .followRedirect(true).secure()).build()).build()
                 .gateway()
                 .setEnabledIntents(IntentSet.of(Intent.GUILD_MEMBERS))
                 .login()
